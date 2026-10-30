@@ -36,10 +36,11 @@ function Shell() {
     }
   }
 
+  const [confirmingLoad, setConfirmingLoad] = useState(false);
+
   function loadLargeSample() {
-    if (window.confirm('現在のデータを、120名・15卓の大規模サンプルに置き換えます。クラウド保存している場合はそちらも置き換わります。よろしいですか？')) {
-      dispatch({ type: 'hydrate', state: createLargeSeedState() });
-    }
+    dispatch({ type: 'hydrate', state: createLargeSeedState() });
+    setConfirmingLoad(false);
   }
 
   return (
@@ -161,9 +162,21 @@ function Shell() {
               <p className="muted">
                 120名・15卓の披露宴データを読み込んで、表示や席次の動作を確認できます。出席者は自動配置済みの状態で読み込まれます。
               </p>
-              <button type="button" className="btn btn-ghost" onClick={loadLargeSample}>
-                120名の大規模サンプルを読み込む
-              </button>
+              {confirmingLoad ? (
+                <div className="sample-confirm">
+                  <span>現在のデータは置き換わります（クラウド保存も同様）。本当に読み込みますか？</span>
+                  <button type="button" className="btn btn-primary" onClick={loadLargeSample}>
+                    読み込む
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setConfirmingLoad(false)}>
+                    やめる
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="btn btn-ghost" onClick={() => setConfirmingLoad(true)}>
+                  120名の大規模サンプルを読み込む
+                </button>
+              )}
             </div>
             <div className="danger-zone">
               <button type="button" className="btn-danger-ghost" onClick={resetData}>

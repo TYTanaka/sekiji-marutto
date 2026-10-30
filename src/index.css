@@ -1046,3 +1046,4 @@ button:not([class]):hover { background: var(--rose-soft); }
   .print-table h2 { font-size: 12pt; margin-bottom: 3mm; }
   .print-seat-row { padding: 1.6mm 0; }
 }
+.sample-confirm { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 600; }
