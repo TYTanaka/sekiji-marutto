@@ -77,24 +77,16 @@ export function Invitation() {
     <section className="view-enter">
       <div className="invitation">
         <img className="hero-img" src={heroUrl} alt="" aria-hidden="true" />
-        <p
-          style={{
-            color: '#a18449',
-            fontSize: '0.75rem',
-            letterSpacing: '0.2em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Wedding Invitation
-        </p>
-        <h1 style={{ fontFamily: '"Noto Serif JP", serif' }}>
-          {info.groomName} ＆ {info.brideName}
+        <p className="inv-kicker">Wedding Invitation</p>
+        <h1 className="inv-names">
+          {info.groomName} <span className="inv-amp">＆</span> {info.brideName}
         </h1>
-        <p>{formattedDate}</p>
-        <p>{info.venue}</p>
-        <p style={{ whiteSpace: 'pre-wrap' }}>{info.message}</p>
+        <div className="inv-divider" aria-hidden="true"><span>❀</span></div>
+        <p className="inv-date">{formattedDate}</p>
+        <p className="inv-venue">{info.venue}</p>
+        <p className="inv-message">{info.message}</p>
         {days !== null && (
-          <p>{days > 0 ? `挙式まで あと${days}日` : '当日です'}</p>
+          <p className="inv-count">{days > 0 ? `挙式まで あと${days}日` : '当日です'}</p>
         )}
       </div>
 

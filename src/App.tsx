@@ -10,6 +10,7 @@ import RsvpPage from './components/RsvpPage';
 import { CloudSync } from './store/cloudSync';
 import { AuthPanel } from './components/AuthPanel';
 import { TasksView } from './components/TasksView';
+import { createLargeSeedState } from './lib/seedLarge';
 
 type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'tasks' | 'print' | 'settings';
 
@@ -32,6 +33,12 @@ function Shell() {
   function resetData() {
     if (window.confirm('すべてのデータを初期状態に戻します。よろしいですか？')) {
       dispatch({ type: 'reset' });
+    }
+  }
+
+  function loadLargeSample() {
+    if (window.confirm('現在のデータを、120名・15卓の大規模サンプルに置き換えます。クラウド保存している場合はそちらも置き換わります。よろしいですか？')) {
+      dispatch({ type: 'hydrate', state: createLargeSeedState() });
     }
   }
 
@@ -149,6 +156,15 @@ function Shell() {
                 </label>
               </div>
             </form>
+            <div className="sample-zone">
+              <h3>大規模サンプルの確認</h3>
+              <p className="muted">
+                120名・15卓の披露宴データを読み込んで、表示や席次の動作を確認できます。出席者は自動配置済みの状態で読み込まれます。
+              </p>
+              <button type="button" className="btn btn-ghost" onClick={loadLargeSample}>
+                120名の大規模サンプルを読み込む
+              </button>
+            </div>
             <div className="danger-zone">
               <button type="button" className="btn-danger-ghost" onClick={resetData}>
                 データを初期状態に戻す

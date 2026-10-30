@@ -847,3 +847,202 @@ button:not([class]):hover { background: var(--rose-soft); }
   .task-row .task-due { margin-left: 32px; }
   .task-row .btn { margin-left: auto; }
 }
+
+/* =====================================================================
+   デザインv4「制作会社の案件レベルへ」
+   - 招待状を“印刷物”として再設計（インラインスタイル排除・階層と余白）
+   - 印刷用席次表をA4前提の版面設計に（@page・2カラム・罫線）
+   - 全体の質感を底上げ（選択色・ブランドリング・卓中央の装飾）
+   ===================================================================== */
+
+::selection { background: var(--rose-soft); color: var(--rose-deep); }
+
+/* ===== 設定：サンプルゾーン ===== */
+.sample-zone {
+  padding: 18px;
+  margin-top: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-warm);
+}
+.sample-zone h3 { margin: 0 0 6px; font-size: 1rem; }
+.sample-zone p { margin: 0 0 14px; font-size: .9rem; line-height: 1.7; }
+
+/* ===== 招待状 v4 ===== */
+.invitation {
+  padding: 64px 44px 58px;
+  border: 1px solid var(--line-strong);
+  outline: 4px double var(--gold);
+  outline-offset: -14px;
+  background:
+    radial-gradient(520px 260px at 50% -70px, var(--rose-soft), rgba(250, 236, 238, 0) 70%),
+    radial-gradient(420px 240px at 50% 108%, var(--gold-soft), rgba(248, 240, 220, 0) 70%),
+    #FFFDF8;
+  line-height: 2;
+}
+.invitation::before {
+  content: "";
+  position: absolute;
+  inset: 20px;
+  border: 1px solid rgba(192, 160, 98, .45);
+  border-radius: 4px;
+  pointer-events: none;
+}
+.invitation::after {
+  content: "❀";
+  top: auto;
+  right: auto;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.15rem;
+  opacity: .6;
+}
+.invitation .hero-img {
+  width: calc(100% + 88px);
+  height: 210px;
+  margin: -64px -44px 38px;
+}
+.inv-kicker {
+  margin: 0 0 16px;
+  color: var(--gold-deep);
+  font-family: var(--font-serif);
+  font-size: .78rem;
+  letter-spacing: .38em;
+  text-transform: uppercase;
+}
+.inv-names {
+  margin: 0 0 8px;
+  font-family: var(--font-serif);
+  font-size: clamp(1.55rem, 5vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: .07em;
+  line-height: 1.55;
+  color: var(--rose-deep);
+}
+.inv-amp { color: var(--gold-deep); font-size: .72em; vertical-align: .18em; }
+.inv-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 20px auto 24px;
+  color: var(--gold);
+  font-size: .95rem;
+}
+.inv-divider::before, .inv-divider::after {
+  content: "";
+  width: 72px;
+  height: 1px;
+}
+.inv-divider::before { background: linear-gradient(90deg, transparent, var(--gold)); }
+.inv-divider::after { background: linear-gradient(90deg, var(--gold), transparent); }
+.inv-date {
+  margin: 0 0 4px;
+  font-size: 1.18rem;
+  letter-spacing: .1em;
+  font-weight: 600;
+}
+.inv-venue { margin: 0 0 22px; font-size: 1rem; letter-spacing: .06em; }
+.inv-message {
+  max-width: 31em;
+  margin: 0 auto;
+  white-space: pre-wrap;
+  line-height: 2.25;
+}
+.inv-count {
+  display: inline-block;
+  margin: 30px 0 6px;
+  padding: 8px 26px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: rgba(248, 240, 220, .65);
+  color: var(--rose-deep);
+  font-weight: 600;
+  letter-spacing: .12em;
+}
+@media (max-width: 640px) {
+  .invitation { padding: 46px 24px 44px; }
+  .invitation .hero-img { width: calc(100% + 48px); height: 150px; margin: -46px -24px 28px; }
+}
+
+/* ===== 概要ヒーロー v4 ===== */
+.hero-band-body {
+  background: linear-gradient(180deg, rgba(255, 253, 248, 0) 0%, rgba(255, 253, 248, .38) 42%, rgba(255, 253, 248, .93) 74%, rgba(255, 253, 248, .98) 100%);
+}
+.hero-names { font-size: clamp(1.65rem, 5vw, 2.3rem); }
+.hero-chip { letter-spacing: .08em; }
+
+/* ===== ブランドと卓の装飾 v4 ===== */
+.brand::before {
+  box-shadow: 0 0 0 2px #FFFDF8, 0 0 0 3.5px rgba(192, 160, 98, .55), 0 6px 14px rgba(183, 110, 121, .35);
+}
+.table-name {
+  border: 1px solid rgba(192, 160, 98, .4);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(248, 240, 220, .9) 0%, rgba(248, 240, 220, 0) 72%);
+}
+.stat-card { transition: transform 160ms ease, box-shadow 160ms ease; }
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+
+/* ===== 印刷用席次表 v4 ===== */
+.print-head { text-align: center; margin-bottom: 8px; }
+.print-kicker {
+  margin: 0 0 2px;
+  color: var(--gold-deep);
+  font-family: var(--font-serif);
+  font-size: .75rem;
+  letter-spacing: .38em;
+  text-transform: uppercase;
+}
+.print-title {
+  margin: 0 0 6px;
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: .34em;
+  text-indent: .34em;
+  color: var(--ink);
+}
+.print-meta { margin: 0; color: var(--muted); letter-spacing: .05em; }
+.print-tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 22px;
+  margin-top: 24px;
+}
+.print-seats { list-style: none; margin: 0; padding: 0; }
+.print-seat-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 2px;
+  border-bottom: 1px dotted var(--line-strong);
+  line-height: 1.6;
+}
+.print-seat-row:last-child { border-bottom: 0; }
+.print-seat-no {
+  flex-shrink: 0;
+  width: 1.7em;
+  text-align: right;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  color: var(--rose-deep);
+  font-variant-numeric: tabular-nums;
+}
+
+@page { size: A4; margin: 13mm; }
+@media print {
+  .print-area { font-size: 10.5pt; }
+  .print-head { margin-bottom: 7mm; }
+  .print-title { font-size: 20pt; }
+  .print-tables { grid-template-columns: 1fr 1fr; gap: 7mm; margin-top: 0; }
+  .print-table {
+    padding: 5mm;
+    border: 1px solid #D9C9AC;
+    border-radius: 6px;
+    box-shadow: none;
+  }
+  .print-table h2 { font-size: 12pt; margin-bottom: 3mm; }
+  .print-seat-row { padding: 1.6mm 0; }
+}

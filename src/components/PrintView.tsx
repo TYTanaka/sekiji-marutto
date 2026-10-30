@@ -13,10 +13,13 @@ export function PrintView() {
 
   return (
     <section className="view-enter print-area">
-      <h1>席次表（印刷用）</h1>
-      <p>
-        {groomName}・{brideName} / {date} / {venue}
-      </p>
+      <header className="print-head">
+        <p className="print-kicker">Seating Chart</p>
+        <h1 className="print-title">席次表</h1>
+        <p className="print-meta">
+          {groomName} ・ {brideName}　／　{date}　／　{venue}
+        </p>
+      </header>
       <button
         type="button"
         className="no-print primary"
@@ -25,15 +28,16 @@ export function PrintView() {
         印刷する
       </button>
 
+      <div className="print-tables">
       {state.tables.map((table) => {
         const fill = tableFill(state, table.id);
 
         return (
-          <div className="card" key={table.id}>
+          <div className="card print-table" key={table.id}>
             <h2>
               {table.name}（{fill.seated}/{fill.seats}）
             </h2>
-            <ol style={{ listStyle: 'none', paddingLeft: 0 }}>
+            <ol className="print-seats">
               {Array.from({ length: table.seats }, (_, index) => {
                 const occupant = assignedGuestAt(state, table.id, index);
                 if (!occupant && index !== 0) {
@@ -44,7 +48,7 @@ export function PrintView() {
                   if (laterOccupied) return null;
                   const emptyCount = table.seats - index;
                   return (
-                    <li key={index} className="muted">
+                    <li key={index} className="muted print-seat-row">
                       （空席 ×{emptyCount}）
                     </li>
                   );
@@ -55,7 +59,7 @@ export function PrintView() {
                   ).some(Boolean);
                   if (!anyOccupied) {
                     return (
-                      <li key={index} className="muted">
+                      <li key={index} className="muted print-seat-row">
                         （全席 空席 ×{table.seats}）
                       </li>
                     );
@@ -63,8 +67,8 @@ export function PrintView() {
                 }
 
                 return (
-                  <li key={index}>
-                    <span>{index + 1}. </span>
+                  <li key={index} className="print-seat-row">
+                    <span className="print-seat-no">{index + 1}</span>
                     {index === 0 && (
                       <>
                         <span className="badge-kamiza">上座</span>{' '}
@@ -89,6 +93,7 @@ export function PrintView() {
           </div>
         );
       })}
+      </div>
 
       <footer>
         {unassigned.length > 0 && (
