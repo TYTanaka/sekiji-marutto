@@ -1081,3 +1081,43 @@ button:not([class]):hover { background: var(--rose-soft); }
 .invite-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .invite-actions .btn { flex: 1 1 96px; }
 .copy-status { margin: 0; min-height: 1.3em; font-size: .85rem; color: var(--muted); }
+
+/* ===== ゲスト側ページの見やすさ（年配のゲストにも読みやすく） ===== */
+.rsvp-page { font-size: 1.0625rem; }
+.rsvp-page .muted, .rsvp-page .field-help { color: #6E5F56; }
+.rsvp-page .field label, .rsvp-page .field .field-cap { font-size: 1rem; }
+.rsvp-page .input, .rsvp-page .select { min-height: 54px; font-size: 1.05rem; }
+.rsvp-page .segmented button { min-height: 52px; padding: 12px 26px; font-size: 1.05rem; }
+.rsvp-page .btn-primary { min-height: 54px; padding: 14px 30px; font-size: 1.05rem; }
+.rsvp-page .inv-message { font-size: 1.02rem; }
+.rsvp-page h2 { font-size: 1.45rem; }
+
+/* ===== 席次表：卓ジャンプナビ ===== */
+.table-nav {
+  position: sticky;
+  top: 100px;
+  z-index: 6;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 2px;
+  margin: 2px 0 10px;
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(8px);
+  scrollbar-width: none;
+}
+.table-nav::-webkit-scrollbar { display: none; }
+.table-nav-chip {
+  flex-shrink: 0;
+  padding: 7px 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.table-nav-chip span { color: var(--rose-deep); font-variant-numeric: tabular-nums; }
+.table-wrap { scroll-margin-top: 172px; }

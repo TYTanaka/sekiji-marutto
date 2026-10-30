@@ -190,12 +190,32 @@ export function SeatingEditor() {
         <p className="arm-hint">席を外すには、もう一度同じ席をタップしてください。</p>
       )}
 
+      <nav className="table-nav" aria-label="卓へのジャンプ">
+        {state.tables.map((table: TableDef) => {
+          const fill = tableFill(state, table.id);
+          return (
+            <button
+              key={table.id}
+              type="button"
+              className="table-nav-chip"
+              onClick={() =>
+                document
+                  .getElementById(`table-card-${table.id}`)
+                  ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            >
+              {table.name} <span>{`${fill.seated}/${fill.seats}`}</span>
+            </button>
+          );
+        })}
+      </nav>
+
       <div className="tables-grid">
         {state.tables.map((table: TableDef) => {
           const fill = tableFill(state, table.id);
 
           return (
-            <section className="table-wrap" key={table.id}>
+            <section className="table-wrap" id={`table-card-${table.id}`} key={table.id}>
               <div className="table-heading">
                 <h3>{table.name}</h3>
                 <span>{`${fill.seated}/${fill.seats}`}</span>
