@@ -1190,3 +1190,26 @@ button:not([class]):hover { background: var(--rose-soft); }
   font-weight: 700;
   cursor: pointer;
 }
+
+/* ===== トップページ（初回） ===== */
+.landing { max-width: 880px; margin: 0 auto; padding: 28px 16px 48px; }
+.landing-card { overflow: hidden; padding: 0 0 30px; }
+.landing-hero-img { width: 100%; height: 180px; object-fit: cover; display: block; }
+.landing-body { padding: 10px 28px 0; text-align: center; }
+.landing-title { font-family: var(--font-serif); font-size: 1.9rem; margin: 10px 0 14px; letter-spacing: .04em; }
+.landing-lead { max-width: 620px; margin: 0 auto; line-height: 1.9; }
+.landing-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 24px 0 6px; text-align: left; }
+.landing-feature { background: var(--surface-warm, #FBF4E8); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.landing-feature h2 { font-size: 1rem; margin: 0 0 8px; }
+.landing-feature p { margin: 0; font-size: .88rem; line-height: 1.75; color: var(--ink-soft, inherit); }
+.landing-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+.landing-cta-main { padding: 14px 30px; font-size: 1.02rem; }
+.landing-note { margin-top: 14px; font-size: .85rem; }
+.landing-auth { max-width: 520px; margin: 18px auto 0; text-align: left; }
+@media (max-width: 640px) {
+  .landing-features { grid-template-columns: 1fr; }
+  .landing-title { font-size: 1.55rem; }
+  .landing-body { padding: 8px 18px 0; }
+}
+.auth-popover { margin-bottom: 16px; }
+.auth-toggle { white-space: nowrap; }

@@ -3,7 +3,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import App from './App'
 
 describe('App smoke', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => { localStorage.clear(); localStorage.setItem('sekiji-entered-v1', '1'); })
   afterEach(() => cleanup())
 
   it('renders the brand and dashboard hint for pending guests', () => {

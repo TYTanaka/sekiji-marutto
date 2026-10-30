@@ -3,7 +3,7 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 import App from './App'
 
 describe('RSVP public page (local mode)', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => { localStorage.clear(); localStorage.setItem('sekiji-entered-v1', '1'); })
   afterEach(() => { cleanup(); window.location.hash = '' })
 
   it('opens the invitation for a valid token and requires an explicit choice', () => {

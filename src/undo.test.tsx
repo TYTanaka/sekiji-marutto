@@ -3,7 +3,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 import App from './App'
 
 describe('確認UIと元に戻す', () => {
-  beforeEach(() => localStorage.clear())
+  beforeEach(() => { localStorage.clear(); localStorage.setItem('sekiji-entered-v1', '1'); })
   afterEach(() => cleanup())
 
   it('ゲスト削除はページ内確認を経て、元に戻すで復元できる', () => {

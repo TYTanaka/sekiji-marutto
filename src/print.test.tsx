@@ -5,7 +5,7 @@ import { createLargeSeedState } from './lib/seedLarge'
 
 describe('印刷用席次表（大規模サンプル）', () => {
   beforeEach(() => {
-    localStorage.clear()
+    localStorage.clear(); localStorage.setItem('sekiji-entered-v1', '1')
     localStorage.setItem('sekiji-state-v2', JSON.stringify(createLargeSeedState()))
   })
   afterEach(() => cleanup())

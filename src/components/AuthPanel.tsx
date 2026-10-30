@@ -9,7 +9,7 @@ function japaneseError(error: { message: string }): string {
   return `エラーが発生しました：${error.message}`;
 }
 
-export function AuthPanel() {
+export function AuthPanel({ onSessionChange }: { onSessionChange?: (session: Session | null) => void }) {
   const [session, setSession] = useState<Session | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,6 +27,7 @@ export function AuthPanel() {
         authChanged = true;
         if (!active) return;
         setSession(nextSession);
+        onSessionChange?.(nextSession);
         setLoading(false);
       },
     );
@@ -34,6 +35,7 @@ export function AuthPanel() {
       ({ data, error: sessionError }) => {
         if (!active || authChanged) return;
         setSession(data.session);
+        onSessionChange?.(data.session);
         if (sessionError) setError(japaneseError(sessionError));
         setLoading(false);
       },
@@ -68,6 +70,7 @@ export function AuthPanel() {
         return;
       }
       setSession(data.session);
+      onSessionChange?.(data.session);
       setPassword('');
       if (action === 'signup' && !data.session) {
         setNotice('確認メールを送信しました。メール内のリンクを開いてからログインしてください。');
@@ -89,7 +92,10 @@ export function AuthPanel() {
     try {
       const { error: signOutError } = await supabase.auth.signOut();
       if (signOutError) setError(japaneseError(signOutError));
-      else setSession(null);
+      else {
+        setSession(null);
+        onSessionChange?.(null);
+      }
     } catch (cause: unknown) {
       setError(japaneseError({
         message: cause instanceof Error ? cause.message : String(cause),

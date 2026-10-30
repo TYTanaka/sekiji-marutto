@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { AppStateProvider, useAppState } from './store/appState';
+import { supabase, cloudEnabled } from './lib/supabase';
+import { Landing } from './components/Landing';
 import { Dashboard } from './components/Dashboard';
 import { GuestManager } from './components/GuestManager';
 import { SeatingEditor } from './components/SeatingEditor';
@@ -25,11 +28,55 @@ const tabs: { view: View; label: string }[] = [
   { view: 'settings', label: '設定' },
 ];
 
+const ENTERED_KEY = 'sekiji-entered-v1';
+const STATE_KEY = 'sekiji-state-v2';
+
 function Shell() {
   const { state, dispatch, dispatchWithUndo, savedAt, cloudPhase } = useAppState();
   const [view, setView] = useState<View>('dashboard');
   const [focusPending, setFocusPending] = useState(0);
   const { info } = state;
+
+  const [entered, setEntered] = useState<boolean>(() => {
+    try {
+      return (
+        localStorage.getItem(ENTERED_KEY) === '1' ||
+        localStorage.getItem(STATE_KEY) !== null
+      );
+    } catch {
+      return true;
+    }
+  });
+  const [authOpen, setAuthOpen] = useState(false);
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+
+  const enterApp = useCallback(() => {
+    try {
+      localStorage.setItem(ENTERED_KEY, '1');
+    } catch {
+      // Storage unavailable; the in-memory state still enters the app.
+    }
+    setEntered(true);
+  }, []);
+
+  const handleSession = useCallback(
+    (session: Session | null) => {
+      setSessionEmail(session?.user.email ?? null);
+      if (session) enterApp();
+    },
+    [enterApp],
+  );
+
+  useEffect(() => {
+    if (entered || !cloudEnabled || !supabase) return;
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active && data.session) handleSession(data.session);
+    });
+    return () => {
+      active = false;
+    };
+  }, [entered, handleSession]);
 
   const [confirmingReset, setConfirmingReset] = useState(false);
 
@@ -62,6 +109,10 @@ function Shell() {
             ? `✓ 保存済み ${timeText}`
             : '';
 
+  if (!entered) {
+    return <Landing onTrySample={enterApp} onSessionChange={handleSession} />;
+  }
+
   return (
     <>
       <header className="app-header">
@@ -87,10 +138,24 @@ function Shell() {
             </button>
           ))}
         </nav>
+        {cloudEnabled && (
+          <button
+            type="button"
+            className="btn-ghost auth-toggle"
+            aria-expanded={authOpen}
+            onClick={() => setAuthOpen((open) => !open)}
+          >
+            {sessionEmail ? 'アカウント' : 'ログイン / 新規登録'}
+          </button>
+        )}
       </header>
 
       <main className="main">
-        <AuthPanel />
+        {authOpen && cloudEnabled && (
+          <div className="auth-popover">
+            <AuthPanel onSessionChange={handleSession} />
+          </div>
+        )}
         <div
           id="active-view"
           role="tabpanel"
