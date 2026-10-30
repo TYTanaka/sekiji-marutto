@@ -28,7 +28,8 @@ export type Action =
   | { type: 'assign'; guestId: string; tableId: string; seatIndex: number }
   | { type: 'unassign'; guestId: string }
   | { type: 'setInfo'; info: WeddingInfo }
-  | { type: 'reset' };
+  | { type: 'reset' }
+  | { type: 'hydrate'; state: AppState };
 
 const STORAGE_KEY = 'sekiji-state-v2';
 
@@ -159,6 +160,8 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'reset':
       return createSeedState();
+    case 'hydrate':
+      return action.state.version === 2 ? action.state : state;
   }
 }
 

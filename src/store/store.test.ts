@@ -28,3 +28,11 @@ describe('reducer', () => {
     expect(next.guests.some((g) => g.id === 'g2')).toBe(false)
   })
 })
+
+describe('hydrate', () => {
+  it('replaces state with a valid cloud state', () => {
+    const s = createSeedState()
+    const other = { ...createSeedState(), guests: [] }
+    expect(reducer(s, { type: 'hydrate', state: other }).guests).toHaveLength(0)
+  })
+})

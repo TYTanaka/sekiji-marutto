@@ -7,6 +7,8 @@ import { Invitation } from './components/Invitation';
 import { InviteLinks } from './components/InviteLinks';
 import { PrintView } from './components/PrintView';
 import RsvpPage from './components/RsvpPage';
+import { CloudSync } from './store/cloudSync';
+import { AuthPanel } from './components/AuthPanel';
 
 type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'print';
 
@@ -51,6 +53,7 @@ function Shell() {
       </header>
 
       <main className="main">
+        <AuthPanel />
         <div
           id="active-view"
           role="tabpanel"
@@ -177,6 +180,7 @@ export default function App() {
   const rsvpToken = useRsvpToken();
   return (
     <AppStateProvider>
+      <CloudSync />
       {rsvpToken ? <RsvpPage token={rsvpToken} /> : <Shell />}
     </AppStateProvider>
   );
