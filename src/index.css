@@ -40,8 +40,8 @@
   --r-sm: 10px;
   --shadow-card: 0 2px 6px rgba(150, 80, 93, .05), 0 14px 34px rgba(150, 80, 93, .08);
   --shadow-lift: 0 4px 10px rgba(150, 80, 93, .10), 0 18px 40px rgba(150, 80, 93, .14);
-  --font-serif: "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", "YuMincho", serif;
-  --font-sans: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", system-ui, -apple-system, sans-serif;
+  --font-serif: "Shippori Mincho B1", "Hiragino Mincho ProN", "Hiragino Mincho Pro", "Yu Mincho", "YuMincho", serif;
+  --font-sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", system-ui, -apple-system, sans-serif;
 }
 
 /* ===== 基本設定 ===== */
@@ -775,3 +775,37 @@ button.primary:disabled { opacity: .45; box-shadow: none; }
 }
 .rsvp-summary dt { font-weight: 700; min-width: 5.5em; color: var(--rose-deep); }
 .rsvp-summary dd { margin: 0; }
+
+/* ==== 最後の仕上げ：フォーム部品の基礎レイヤー ==== */
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select,
+textarea {
+  min-height: 46px;
+  padding: 11px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r-md);
+  background: #FFFEFB;
+  color: var(--ink);
+  font: inherit;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):focus,
+select:focus,
+textarea:focus {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 4px var(--rose-soft);
+  outline: none;
+}
+textarea { min-height: 96px; resize: vertical; line-height: 1.7; }
+button:not([class]) {
+  min-height: 42px;
+  padding: 9px 18px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--rose-deep);
+  font-weight: 600;
+}
+button:not([class]):hover { background: var(--rose-soft); }
+.settings-card label { display: grid; gap: 6px; font-size: .875rem; font-weight: 700; }
+.danger-zone { padding: 18px; border-radius: var(--r-md); margin-top: 22px; }

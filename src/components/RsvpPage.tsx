@@ -184,7 +184,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
         <p style={{ fontVariant: 'small-caps', letterSpacing: '0.18em' }}>
           Wedding Invitation
         </p>
-        <h1 id="invitation-title" style={{ fontFamily: 'serif' }}>
+        <h1 id="invitation-title" style={{ fontFamily: 'var(--font-serif)' }}>
           {info.groomName} ＆ {info.brideName}
         </h1>
         <p>{formatJapaneseDate(info.date)}</p>
