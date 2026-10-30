@@ -141,7 +141,7 @@ function Shell() {
                     }
                   />
                 </label>
-                <label htmlFor="wedding-message">
+                <label htmlFor="wedding-message" className="field-wide">
                   メッセージ
                   <textarea
                     id="wedding-message"
@@ -179,6 +179,10 @@ function Shell() {
               )}
             </div>
             <div className="danger-zone">
+              <h3>データの初期化</h3>
+              <p className="muted">
+                すべてのゲスト・席次・式の情報が最初のサンプルに戻ります。クラウド保存している場合はそちらも初期化されます。実行前に確認画面が出ます。
+              </p>
               <button type="button" className="btn-danger-ghost" onClick={resetData}>
                 データを初期状態に戻す
               </button>

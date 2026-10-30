@@ -17,7 +17,7 @@ export function PrintView() {
         <p className="print-kicker">Seating Chart</p>
         <h1 className="print-title">席次表</h1>
         <p className="print-meta">
-          {groomName} ・ {brideName}　／　{date}　／　{venue}
+          {groomName} ・ {brideName}　／　{date.replaceAll('-', '/')}　／　{venue}
         </p>
       </header>
       <button

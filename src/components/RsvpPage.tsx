@@ -39,6 +39,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
   const [companions, setCompanions] = useState(0);
   const [allergy, setAllergy] = useState('');
   const [memo, setMemo] = useState('');
+  const [alreadyAnswered, setAlreadyAnswered] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [summary, setSummary] = useState<{ rsvp: Choice; companions: number; allergy: string; memo: string } | null>(null);
   const [error, setError] = useState('');
@@ -76,6 +77,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
           data.guest.rsvp === 'attending' ||
           data.guest.rsvp === 'declined'
         ) {
+          setAlreadyAnswered(true);
           setChoice(data.guest.rsvp);
           setCompanions(data.guest.companions ?? 0);
           setAllergy(data.guest.allergy ?? '');
@@ -181,16 +183,15 @@ export default function RsvpPage({ token }: RsvpPageProps) {
     <main className="rsvp-page">
       <section className="invitation" aria-labelledby="invitation-title">
         <img className="hero-img" src={heroUrl} alt="" aria-hidden="true" />
-        <p style={{ fontVariant: 'small-caps', letterSpacing: '0.18em' }}>
-          Wedding Invitation
-        </p>
-        <h1 id="invitation-title" style={{ fontFamily: 'var(--font-serif)' }}>
-          {info.groomName} ＆ {info.brideName}
+        <p className="inv-kicker">Wedding Invitation</p>
+        <h1 id="invitation-title" className="inv-names">
+          {info.groomName} <span className="inv-amp">＆</span> {info.brideName}
         </h1>
-        <p>{formatJapaneseDate(info.date)}</p>
-        <p>{info.venue}</p>
-        <p style={{ whiteSpace: 'pre-wrap' }}>{info.message}</p>
-        <p>{guest.name} 様</p>
+        <div className="inv-divider" aria-hidden="true"><span>❀</span></div>
+        <p className="inv-date">{formatJapaneseDate(info.date)}</p>
+        <p className="inv-venue">{info.venue}</p>
+        <p className="inv-message">{info.message}</p>
+        <p className="inv-guest">{guest.name} 様</p>
       </section>
 
       <form
@@ -203,44 +204,59 @@ export default function RsvpPage({ token }: RsvpPageProps) {
         }}
       >
         <h2 id="rsvp-title">出欠のご回答</h2>
-        <fieldset disabled={submitting}>
-          <legend>出欠（必須）</legend>
-          <div className="segmented" role="group" aria-label="出欠">
-            {(['attending', 'declined'] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={choice === value ? 'active' : ''}
-                aria-pressed={choice === value}
-                onClick={() => setChoice(value)}
-              >
-                {value === 'attending' ? '出席' : '欠席'}
-              </button>
-            ))}
+        <fieldset disabled={submitting} className="rsvp-fields">
+          <div className="field">
+            <span className="field-cap">出欠（必須）</span>
+            <div className="segmented" role="group" aria-label="出欠">
+              {(['attending', 'declined'] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className={choice === value ? 'active' : ''}
+                  aria-pressed={choice === value}
+                  onClick={() => setChoice(value)}
+                >
+                  {value === 'attending' ? '出席' : '欠席'}
+                </button>
+              ))}
+            </div>
+            <p className="field-help">
+              {alreadyAnswered
+                ? '前回の回答が選択されています。変更して送信すると上書きされます。'
+                : choice === null
+                  ? '出席または欠席を選択してください。'
+                  : 'この内容で送信できます。'}
+            </p>
           </div>
-          <p>出席または欠席を選択してください。</p>
 
-          <label htmlFor="rsvp-companions">同伴者数</label>
-          <select
-            id="rsvp-companions"
-            value={companions}
-            disabled={choice !== 'attending'}
-            aria-describedby="companions-help"
-            onChange={(event) => setCompanions(Number(event.target.value))}
-          >
-            {[0, 1, 2, 3].map((count) => (
-              <option key={count} value={count}>{count}名</option>
-            ))}
-          </select>
-          <p id="companions-help">出席の場合のみ有効</p>
+          <div className="field">
+            <label htmlFor="rsvp-companions">同伴者数</label>
+            <select
+              id="rsvp-companions"
+              className="select"
+              value={companions}
+              disabled={choice !== 'attending'}
+              aria-describedby="companions-help"
+              onChange={(event) => setCompanions(Number(event.target.value))}
+            >
+              {[0, 1, 2, 3].map((count) => (
+                <option key={count} value={count}>{count}名</option>
+              ))}
+            </select>
+            <p className="field-help" id="companions-help">出席の場合のみ有効</p>
+          </div>
 
-          <label htmlFor="rsvp-allergy">アレルギー</label>
-          <input id="rsvp-allergy" value={allergy} onChange={(event) => setAllergy(event.target.value)} />
-          <label htmlFor="rsvp-memo">メッセージ</label>
-          <input id="rsvp-memo" value={memo} onChange={(event) => setMemo(event.target.value)} />
+          <div className="field">
+            <label htmlFor="rsvp-allergy">アレルギー</label>
+            <input id="rsvp-allergy" className="input" value={allergy} onChange={(event) => setAllergy(event.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="rsvp-memo">メッセージ</label>
+            <input id="rsvp-memo" className="input" value={memo} onChange={(event) => setMemo(event.target.value)} />
+          </div>
         </fieldset>
         {error && <p role="alert">{error}</p>}
-        <button className="primary" type="submit" disabled={choice === null || submitting}>
+        <button className="btn btn-primary" type="submit" disabled={choice === null || submitting}>
           {submitting ? '送信中…' : '送信する'}
         </button>
       </form>

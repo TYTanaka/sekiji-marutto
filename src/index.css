@@ -1053,3 +1053,22 @@ button:not([class]):hover { background: var(--rose-soft); }
 /* ===== ログインフォーム（他画面の .field パターンに統一） ===== */
 .auth-fields { border: 0; padding: 0; margin: 0; display: grid; gap: 14px; min-width: 0; }
 .auth-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ===== フォーム統一の追加（監査対応） ===== */
+.stack-form { display: grid; gap: 14px; }
+.field .field-cap { font-size: .875rem; font-weight: 700; letter-spacing: .02em; color: var(--ink); }
+.field-help { margin: 0; font-size: .82rem; color: var(--muted); line-height: 1.6; }
+.rsvp-fields { border: 0; padding: 0; margin: 0 0 16px; display: grid; gap: 16px; min-width: 0; }
+.field-wide { grid-column: 1 / -1; }
+.danger-zone h3 { margin: 0 0 6px; font-size: 1rem; color: var(--danger); }
+.danger-zone p { margin: 0 0 14px; font-size: .9rem; line-height: 1.7; }
+.inv-guest {
+  margin: 26px 0 0;
+  display: inline-block;
+  padding: 6px 22px;
+  border-top: 1px solid rgba(192, 160, 98, .5);
+  border-bottom: 1px solid rgba(192, 160, 98, .5);
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  letter-spacing: .14em;
+}

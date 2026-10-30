@@ -98,74 +98,86 @@ export function Invitation() {
         </p>
 
         <form
+          className="stack-form"
           onSubmit={(event) => {
             event.preventDefault();
             submitResponse();
           }}
         >
-          <label htmlFor="invitation-guest">ゲスト</label>
-          <select
-            id="invitation-guest"
-            className="select"
-            value={guestId}
-            onChange={(event) => {
-              setGuestId(event.target.value);
-              setSent(false);
-            }}
-          >
-            {state.guests.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-
-          <div className="segmented" role="group" aria-label="出欠">
-            <button
-              type="button"
-              className={rsvp === 'attending' ? 'active' : ''}
-              aria-pressed={rsvp === 'attending'}
-              onClick={() => setRsvp('attending')}
+          <div className="field">
+            <label htmlFor="invitation-guest">ゲスト</label>
+            <select
+              id="invitation-guest"
+              className="select"
+              value={guestId}
+              onChange={(event) => {
+                setGuestId(event.target.value);
+                setSent(false);
+              }}
             >
-              出席
-            </button>
-            <button
-              type="button"
-              className={rsvp === 'declined' ? 'active' : ''}
-              aria-pressed={rsvp === 'declined'}
-              onClick={() => setRsvp('declined')}
-            >
-              欠席
-            </button>
+              {state.guests.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <label htmlFor="invitation-companions">同伴者数</label>
-          <select
-            id="invitation-companions"
-            className="select"
-            value={companions}
-            onChange={(event) => setCompanions(Number(event.target.value))}
-          >
-            {[0, 1, 2, 3].map((count) => (
-              <option key={count} value={count}>{count}人</option>
-            ))}
-          </select>
+          <div className="field">
+            <span className="field-cap">出欠</span>
+            <div className="segmented" role="group" aria-label="出欠">
+              <button
+                type="button"
+                className={rsvp === 'attending' ? 'active' : ''}
+                aria-pressed={rsvp === 'attending'}
+                onClick={() => setRsvp('attending')}
+              >
+                出席
+              </button>
+              <button
+                type="button"
+                className={rsvp === 'declined' ? 'active' : ''}
+                aria-pressed={rsvp === 'declined'}
+                onClick={() => setRsvp('declined')}
+              >
+                欠席
+              </button>
+            </div>
+          </div>
 
-          <label htmlFor="invitation-allergy">アレルギー</label>
-          <input
-            id="invitation-allergy"
-            className="input"
-            value={allergy}
-            onChange={(event) => setAllergy(event.target.value)}
-          />
+          <div className="field">
+            <label htmlFor="invitation-companions">同伴者数</label>
+            <select
+              id="invitation-companions"
+              className="select"
+              value={companions}
+              onChange={(event) => setCompanions(Number(event.target.value))}
+            >
+              {[0, 1, 2, 3].map((count) => (
+                <option key={count} value={count}>{count}人</option>
+              ))}
+            </select>
+          </div>
 
-          <label htmlFor="invitation-memo">メモ</label>
-          <input
-            id="invitation-memo"
-            className="input"
-            value={memo}
-            onChange={(event) => setMemo(event.target.value)}
-          />
+          <div className="field">
+            <label htmlFor="invitation-allergy">アレルギー</label>
+            <input
+              id="invitation-allergy"
+              className="input"
+              value={allergy}
+              onChange={(event) => setAllergy(event.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="invitation-memo">メモ</label>
+            <input
+              id="invitation-memo"
+              className="input"
+              value={memo}
+              onChange={(event) => setMemo(event.target.value)}
+            />
+          </div>
 
           <button type="submit" className="btn primary" disabled={!guest || !rsvp}>
             送信する
