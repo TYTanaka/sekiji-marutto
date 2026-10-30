@@ -14,6 +14,7 @@ export interface Guest {
   allergy: string;
   memo: string;
   companions: number;
+  inviteToken: string;
 }
 
 export interface TableDef {

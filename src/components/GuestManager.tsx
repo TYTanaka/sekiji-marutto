@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAppState } from '../store/appState';
+import { newInviteToken } from '../lib/supabase';
 import {
   type Guest,
   type GuestGroup,
@@ -10,7 +11,7 @@ import {
   SIDE_LABELS,
 } from '../types';
 
-type GuestDraft = Omit<Guest, 'id'>;
+type GuestDraft = Omit<Guest, 'id' | 'inviteToken'>;
 
 const sideOptions = Object.entries(SIDE_LABELS) as [Side, string][];
 const groupOptions = Object.entries(GROUP_LABELS) as [GuestGroup, string][];
@@ -117,7 +118,7 @@ export function GuestManager() {
           ? globalThis.crypto.randomUUID()
           : 'g-' + Date.now();
 
-      dispatch({ type: 'addGuest', guest: { ...values, id } });
+      dispatch({ type: 'addGuest', guest: { ...values, id, inviteToken: newInviteToken() } });
     }
 
     closeForm();

@@ -27,6 +27,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '主賓のご挨拶をお願いしています。上座にご案内。',
+        inviteToken: 'inv-8f3ka92m',
       },
       {
         id: 'g2',
@@ -38,6 +39,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-4hd7x1qp',
       },
       {
         id: 'g3',
@@ -49,6 +51,7 @@ export function createSeedState(): AppState {
         allergy: '甲殻類',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-9zm2kwd5',
       },
       {
         id: 'g4',
@@ -60,6 +63,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-3rt8bn6v',
       },
       {
         id: 'g5',
@@ -71,6 +75,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-6qw1zs9d',
       },
       {
         id: 'g6',
@@ -82,6 +87,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-2mc9xh47',
       },
       {
         id: 'g7',
@@ -93,6 +99,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 1,
         memo: '夫と一緒に出席。隣同士の席を希望。',
+        inviteToken: 'inv-7vb4kd28',
       },
       {
         id: 'g8',
@@ -104,6 +111,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-5np6jw93',
       },
       {
         id: 'g9',
@@ -115,6 +123,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-1gx8qe64',
       },
       {
         id: 'g10',
@@ -126,6 +135,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-9td3mz27',
       },
       {
         id: 'g11',
@@ -137,6 +147,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-4ka7rw85',
       },
       {
         id: 'g12',
@@ -148,6 +159,7 @@ export function createSeedState(): AppState {
         allergy: '',
         companions: 0,
         memo: '',
+        inviteToken: 'inv-6hs2px41',
       },
     ],
     assignments: {
