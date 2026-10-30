@@ -363,7 +363,7 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 
 .badge.attending { background: var(--green-soft); color: var(--green-deep); }
 .badge.pending { background: var(--amber-soft); color: var(--amber); }
-.badge-kamiza { border: 1px solid var(--gold); background: var(--gold-soft); color: var(--gold-deep); font-weight: 700; }
+.badge-kamiza { border: 1px solid var(--gold); background: var(--gold-soft); color: var(--gold-deep); font-weight: 700; white-space: nowrap; flex-shrink: 0; }
 .badge-allergy { background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger-line); font-weight: 700; }
 
 /* ===== ゲスト行（カード型リスト） ===== */
