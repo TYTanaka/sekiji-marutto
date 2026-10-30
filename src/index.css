@@ -1121,3 +1121,10 @@ button:not([class]):hover { background: var(--rose-soft); }
 }
 .table-nav-chip span { color: var(--rose-deep); font-variant-numeric: tabular-nums; }
 .table-wrap { scroll-margin-top: 172px; }
+
+/* ===== 印刷の改ページ保護（見出しと席行を割らない） ===== */
+@media print {
+  .print-table h2 { break-after: avoid; }
+  .print-seat-row { break-inside: avoid; }
+  .print-head { break-after: avoid; }
+}
