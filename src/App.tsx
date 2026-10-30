@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { GuestManager } from './components/GuestManager';
 import { SeatingEditor } from './components/SeatingEditor';
 import { Invitation } from './components/Invitation';
+import { InviteLinks } from './components/InviteLinks';
 import { PrintView } from './components/PrintView';
 import RsvpPage from './components/RsvpPage';
 
@@ -58,7 +59,7 @@ function Shell() {
           {view === 'dashboard' && <Dashboard />}
           {view === 'guests' && <GuestManager />}
           {view === 'seating' && <SeatingEditor />}
-          {view === 'invitation' && <Invitation />}
+          {view === 'invitation' && (<><Invitation /><InviteLinks /></>)}
           {view === 'print' && <PrintView />}
         </div>
 
