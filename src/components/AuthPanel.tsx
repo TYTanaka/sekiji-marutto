@@ -121,12 +121,16 @@ export function AuthPanel() {
       <h2 id="auth-panel-title">クラウド保存（ログイン）</h2>
       <p>ログインすると、データがクラウドに保存され、別の端末でも同じ内容を編集できます。ゲストへの招待リンクも本物になります。</p>
       <form onSubmit={(event) => { event.preventDefault(); void authenticate('login'); }}>
-        <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0 }}>
-          <label htmlFor="auth-email">メールアドレス</label>
-          <input id="auth-email" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
-          <label htmlFor="auth-password">パスワード</label>
-          <input id="auth-password" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+        <fieldset disabled={busy} className="auth-fields">
+          <div className="field">
+            <label htmlFor="auth-email">メールアドレス</label>
+            <input id="auth-email" className="input" type="email" autoComplete="email" required value={email} onChange={(event) => setEmail(event.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="auth-password">パスワード</label>
+            <input id="auth-password" className="input" type="password" autoComplete="current-password" required value={password} onChange={(event) => setPassword(event.target.value)} />
+          </div>
+          <div className="auth-actions">
             <button type="submit" className="btn-primary">ログイン</button>
             <button type="submit" className="btn-ghost" onClick={(event) => {
               if (!event.currentTarget.form?.reportValidity()) return;
