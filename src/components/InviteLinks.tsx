@@ -58,7 +58,7 @@ export function InviteLinks() {
         const isQrOpen = openQrId === id;
 
         return (
-          <div className="guest-row" key={guest.id}>
+          <div className="guest-row invite-row" key={guest.id}>
             <div>
               <strong>{guest.name}</strong>{' '}
               <span className={`badge ${guest.rsvp}`}>
@@ -81,7 +81,7 @@ export function InviteLinks() {
               aria-label={`${guest.name}さんの招待リンク`}
             />
 
-            <div className="row-actions">
+            <div className="invite-actions">
               <button
                 className="btn btn-primary"
                 type="button"
@@ -125,10 +125,11 @@ export function InviteLinks() {
                 </button>
               )}
 
-              <span className="muted" role="status" aria-live="polite">
-                {copiedId === id ? 'コピーしました' : ''}
-              </span>
             </div>
+
+            <p className="copy-status" role="status" aria-live="polite">
+              {copiedId === id ? 'コピーしました' : ''}
+            </p>
 
             {isQrOpen && (
               <div>

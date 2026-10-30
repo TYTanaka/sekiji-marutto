@@ -1072,3 +1072,12 @@ button:not([class]):hover { background: var(--rose-soft); }
   font-size: 1.05rem;
   letter-spacing: .14em;
 }
+
+/* ===== ボタンの潰れ防止と招待リンク行のモバイル対応 ===== */
+.btn, .btn-primary, .btn-ghost, .btn-danger-ghost, .line-btn { white-space: nowrap; }
+.row-actions { flex-wrap: wrap; }
+.row-actions > * { flex-shrink: 0; }
+.guest-row.invite-row { display: grid; gap: 12px; justify-content: stretch; }
+.invite-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.invite-actions .btn { flex: 1 1 96px; }
+.copy-status { margin: 0; min-height: 1.3em; font-size: .85rem; color: var(--muted); }
