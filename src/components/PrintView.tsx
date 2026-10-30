@@ -36,6 +36,31 @@ export function PrintView() {
             <ol style={{ listStyle: 'none', paddingLeft: 0 }}>
               {Array.from({ length: table.seats }, (_, index) => {
                 const occupant = assignedGuestAt(state, table.id, index);
+                if (!occupant && index !== 0) {
+                  const laterOccupied = Array.from(
+                    { length: table.seats - index - 1 },
+                    (_, k) => assignedGuestAt(state, table.id, index + 1 + k),
+                  ).some(Boolean);
+                  if (laterOccupied) return null;
+                  const emptyCount = table.seats - index;
+                  return (
+                    <li key={index} className="muted">
+                      （空席 ×{emptyCount}）
+                    </li>
+                  );
+                }
+                if (!occupant && index === 0) {
+                  const anyOccupied = Array.from({ length: table.seats }, (_, k) =>
+                    assignedGuestAt(state, table.id, k),
+                  ).some(Boolean);
+                  if (!anyOccupied) {
+                    return (
+                      <li key={index} className="muted">
+                        （全席 空席 ×{table.seats}）
+                      </li>
+                    );
+                  }
+                }
 
                 return (
                   <li key={index}>
@@ -68,7 +93,7 @@ export function PrintView() {
       <footer>
         {unassigned.length > 0 && (
           <p className="hint" role="alert">
-            未配置の出席ゲストが{unassigned.length}名います。
+            未配置の出席ゲストが{unassigned.length}名います：{unassigned.map((g) => g.name).join('、')}
           </p>
         )}
       </footer>

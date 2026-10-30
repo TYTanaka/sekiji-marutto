@@ -1,0 +1,359 @@
+import { useEffect, useRef, useState } from 'react';
+import { useAppState } from '../store/appState';
+import {
+  seatPosition,
+  assignedGuestAt,
+  unassignedAttending,
+  tableFill,
+} from '../lib/seating';
+import { summarize } from '../lib/stats';
+import type { TableDef } from '../types';
+
+function tableSuggestion(tables: TableDef[]): string {
+  const letters = tables
+    .map((table) => table.name)
+    .filter((name) => /^[A-Z]卓$/.test(name))
+    .map((name) => name.charCodeAt(0));
+
+  return letters.length === 0
+    ? 'A卓'
+    : `${String.fromCharCode(Math.max(...letters) + 1)}卓`;
+}
+
+function nameLines(name: string): string[] {
+  return name.trim().split(/[\s\u3000]+/).filter(Boolean);
+}
+
+type DragState = {
+  guestId: string;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
+};
+
+export default function SeatingEditor() {
+  const { state, dispatch } = useAppState();
+  const [selectedGuestId, setSelectedGuestId] = useState<string | null>(null);
+  const [armedSeat, setArmedSeat] = useState<string | null>(null);
+  const [tableName, setTableName] = useState('');
+  const [tableSeats, setTableSeats] = useState<6 | 8 | 10>(8);
+  const [draggingGuestId, setDraggingGuestId] = useState<string | null>(null);
+  const dragRef = useRef<DragState | null>(null);
+  const suppressClickRef = useRef(false);
+
+  const unassigned = unassignedAttending(state);
+  const stats = summarize(state.guests);
+  const suggestedName = tableSuggestion(state.tables);
+  const allSeated = stats.attending > 0 && unassigned.length === 0;
+
+  useEffect(() => {
+    if (
+      selectedGuestId !== null &&
+      !unassigned.some((guest) => guest.id === selectedGuestId)
+    ) {
+      setSelectedGuestId(null);
+    }
+  }, [selectedGuestId, unassigned]);
+
+  useEffect(() => {
+    if (armedSeat === null) return;
+
+    const exists = state.tables.some((table) =>
+      Array.from({ length: table.seats }, (_, seatIndex) => seatIndex).some(
+        (seatIndex) =>
+          `${table.id}:${seatIndex}` === armedSeat &&
+          assignedGuestAt(state, table.id, seatIndex) !== undefined,
+      ),
+    );
+
+    if (!exists) setArmedSeat(null);
+  }, [armedSeat, state]);
+
+  useEffect(() => {
+    function finishDrag(event: PointerEvent) {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      dragRef.current = null;
+      setDraggingGuestId(null);
+
+      if (!drag.moved) return;
+
+      suppressClickRef.current = true;
+      window.setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 0);
+
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const seat = target?.closest<HTMLElement>('[data-seat-target]');
+      const tableId = seat?.dataset.tableId;
+      const seatIndexValue = seat?.dataset.seatIndex;
+
+      if (!tableId || seatIndexValue === undefined) return;
+
+      const seatIndex = Number(seatIndexValue);
+      const table = state.tables.find((item) => item.id === tableId);
+
+      if (
+        !table ||
+        !Number.isInteger(seatIndex) ||
+        seatIndex < 0 ||
+        seatIndex >= table.seats ||
+        assignedGuestAt(state, tableId, seatIndex)
+      ) {
+        return;
+      }
+
+      dispatch({
+        type: 'assign',
+        guestId: drag.guestId,
+        tableId,
+        seatIndex,
+      });
+      setSelectedGuestId(null);
+      setArmedSeat(null);
+    }
+
+    function moveDrag(event: PointerEvent) {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      if (
+        Math.hypot(
+          event.clientX - drag.startX,
+          event.clientY - drag.startY,
+        ) > 6
+      ) {
+        drag.moved = true;
+        setDraggingGuestId(drag.guestId);
+      }
+
+      if (drag.moved) event.preventDefault();
+    }
+
+    function cancelDrag(event: PointerEvent) {
+      if (dragRef.current?.pointerId !== event.pointerId) return;
+      dragRef.current = null;
+      setDraggingGuestId(null);
+    }
+
+    window.addEventListener('pointermove', moveDrag, { passive: false });
+    window.addEventListener('pointerup', finishDrag);
+    window.addEventListener('pointercancel', cancelDrag);
+
+    return () => {
+      window.removeEventListener('pointermove', moveDrag);
+      window.removeEventListener('pointerup', finishDrag);
+      window.removeEventListener('pointercancel', cancelDrag);
+    };
+  }, [dispatch, state]);
+
+  function handleSeatClick(tableId: string, seatIndex: number) {
+    const key = `${tableId}:${seatIndex}`;
+    const guest = assignedGuestAt(state, tableId, seatIndex);
+
+    if (guest) {
+      setSelectedGuestId(null);
+
+      if (armedSeat === key) {
+        dispatch({ type: 'unassign', guestId: guest.id });
+        setArmedSeat(null);
+      } else {
+        setArmedSeat(key);
+      }
+
+      return;
+    }
+
+    setArmedSeat(null);
+    if (selectedGuestId === null) return;
+
+    dispatch({
+      type: 'assign',
+      guestId: selectedGuestId,
+      tableId,
+      seatIndex,
+    });
+    setSelectedGuestId(null);
+  }
+
+  return (
+    <section
+      className="seating-editor"
+      aria-label="席次の編集"
+      onClickCapture={(event) => {
+        const target = event.target;
+        if (
+          target instanceof Element &&
+          !target.closest('[data-seat-target]')
+        ) {
+          setArmedSeat(null);
+        }
+      }}
+    >
+      <header className="section-header">
+        <h2>席次を決める</h2>
+        <p>ゲストを選んで、それぞれの席に配置しましょう。</p>
+      </header>
+
+      {allSeated && (
+        <div className="celebration-banner" role="status">
+          🎉 出席するゲスト全員の席が決まりました！
+        </div>
+      )}
+
+      <section className="unassigned-section" aria-label="未配置のゲスト">
+        <h3>
+          未配置のゲスト
+          <span className="unassigned-count">（{unassigned.length}名）</span>
+        </h3>
+
+        <div className="guest-chips">
+          {unassigned.map((guest) => {
+            const selected = selectedGuestId === guest.id;
+            const dragging = draggingGuestId === guest.id;
+
+            return (
+              <button
+                key={guest.id}
+                type="button"
+                className={[
+                  'guest-chip',
+                  selected ? 'selected' : '',
+                  dragging ? 'dragging' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                aria-label={`${guest.name}さんを選択`}
+                aria-pressed={selected}
+                style={{ touchAction: 'none' }}
+                onPointerDown={(event) => {
+                  if (!event.isPrimary || event.button !== 0) return;
+                  setArmedSeat(null);
+                  dragRef.current = {
+                    guestId: guest.id,
+                    pointerId: event.pointerId,
+                    startX: event.clientX,
+                    startY: event.clientY,
+                    moved: false,
+                  };
+                }}
+                onClick={() => {
+                  if (suppressClickRef.current) return;
+                  setArmedSeat(null);
+                  setSelectedGuestId(selected ? null : guest.id);
+                }}
+              >
+                {guest.name}
+              </button>
+            );
+          })}
+
+          {unassigned.length === 0 && (
+            <p className="empty-message">未配置のゲストはいません。</p>
+          )}
+        </div>
+      </section>
+
+      <p className="seating-note">
+        ゲストをタップしてから空いている席をタップすると配置できます。
+        ゲストを空席までドラッグして配置することもできます。
+        配置済みの席を２回タップすると、席を外せます。
+      </p>
+
+      {armedSeat !== null && (
+        <p className="unassign-hint" role="status">
+          席を外すには、もう一度同じ席をタップしてください。
+        </p>
+      )}
+
+      <div className="tables-grid">
+        {state.tables.map((table) => (
+          <section key={table.id} className="table-card" aria-label={table.name}>
+            <header className="table-header">
+              <h3>{table.name}</h3>
+              <div className="table-controls">
+                <span className="table-fill">
+                  {tableFill(state, table.id)} / {table.seats}名
+                </span>
+                <select
+                  aria-label={`${table.name}の席数`}
+                  value={table.seats}
+                  onChange={(event) => {
+                    setArmedSeat(null);
+                    dispatch({
+                      type: 'updateTable',
+                      id: table.id,
+                      seats: Number(event.target.value) as 6 | 8 | 10,
+                    });
+                  }}
+                >
+                  {[6, 8, 10].map((count) => (
+                    <option key={count} value={count}>{count}席</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={state.tables.length <= 1}
+                  aria-label={`${table.name}を削除`}
+                  onClick={() => {
+                    if (window.confirm(`${table.name}を削除しますか？`)) {
+                      dispatch({ type: 'deleteTable', id: table.id });
+                    }
+                  }}
+                >
+                  削除
+                </button>
+              </div>
+            </header>
+            <div className="round-table">
+              <div className="table-center" aria-hidden="true">{table.name}</div>
+              {Array.from({ length: table.seats }, (_, seatIndex) => {
+                const guest = assignedGuestAt(state, table.id, seatIndex);
+                const armed = armedSeat === `${table.id}:${seatIndex}`;
+                return (
+                  <button
+                    key={seatIndex}
+                    type="button"
+                    className={`seat ${guest ? 'occupied' : 'empty'}${armed ? ' armed' : ''}`}
+                    style={seatPosition(seatIndex, table.seats)}
+                    data-seat-target=""
+                    data-table-id={table.id}
+                    data-seat-index={seatIndex}
+                    aria-label={`${table.name} ${seatIndex + 1}番席${seatIndex === 0 ? ' 上座' : ''}、${guest ? `${guest.name}さん${armed ? '、もう一度タップして席を外す' : '、タップして席を外す確認'}` : '空席'}`}
+                    onClick={() => handleSeatClick(table.id, seatIndex)}
+                  >
+                    <span className="seat-no">{seatIndex + 1}</span>
+                    {guest && nameLines(guest.name).map((line, index) => (
+                      <span className="seat-name-line" key={index}>{line}</span>
+                    ))}
+                    {armed ? (
+                      <span className="seat-unassign-label">外しますか？</span>
+                    ) : seatIndex === 0 ? (
+                      <span className="badge-kamiza">上座</span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <form
+        className="add-table-form"
+        onSubmit={(event) => {
+          event.preventDefault();
+          dispatch({ type: 'addTable', name: tableName.trim() || suggestedName, seats: tableSeats });
+          setTableName('');
+          setArmedSeat(null);
+        }}
+      >
+        <label>卓名<input value={tableName} placeholder={suggestedName} onChange={(event) => setTableName(event.target.value)} /></label>
+        <label>席数<select value={tableSeats} onChange={(event) => setTableSeats(Number(event.target.value) as 6 | 8 | 10)}>{[6, 8, 10].map((count) => <option key={count} value={count}>{count}席</option>)}</select></label>
+        <button type="submit">卓を追加</button>
+      </form>
+    </section>
+  );
+}

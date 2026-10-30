@@ -10,7 +10,7 @@ import RsvpPage from './components/RsvpPage';
 import { CloudSync } from './store/cloudSync';
 import { AuthPanel } from './components/AuthPanel';
 
-type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'print';
+type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'print' | 'settings';
 
 const tabs: { view: View; label: string }[] = [
   { view: 'dashboard', label: '概要' },
@@ -18,11 +18,13 @@ const tabs: { view: View; label: string }[] = [
   { view: 'seating', label: '席次表' },
   { view: 'invitation', label: '招待状' },
   { view: 'print', label: '印刷' },
+  { view: 'settings', label: '設定' },
 ];
 
 function Shell() {
   const { state, dispatch } = useAppState();
   const [view, setView] = useState<View>('dashboard');
+  const [focusPending, setFocusPending] = useState(0);
   const { info } = state;
 
   function resetData() {
@@ -59,14 +61,14 @@ function Shell() {
           role="tabpanel"
           aria-labelledby={`tab-${view}`}
         >
-          {view === 'dashboard' && <Dashboard />}
-          {view === 'guests' && <GuestManager />}
+          {view === 'dashboard' && (<Dashboard onShowPending={() => { setView('guests'); setFocusPending((n) => n + 1); }} />)}
+          {view === 'guests' && <GuestManager focusPendingSignal={focusPending} />}
           {view === 'seating' && <SeatingEditor />}
           {view === 'invitation' && (<><Invitation /><InviteLinks /></>)}
           {view === 'print' && <PrintView />}
         </div>
 
-        {view !== 'print' && (
+        {view === 'settings' && (
           <section className="card settings-card" aria-labelledby="settings-title">
             <h2 id="settings-title">式の情報</h2>
             <form onSubmit={(event) => event.preventDefault()}>

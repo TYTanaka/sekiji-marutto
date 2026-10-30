@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppState } from '../store/appState';
 import { newInviteToken } from '../lib/supabase';
 import {
@@ -49,7 +49,7 @@ function createDraft(guest: Guest | null = null): GuestDraft {
   };
 }
 
-export function GuestManager() {
+export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: number }) {
   const { state, dispatch } = useAppState();
   const [query, setQuery] = useState('');
   const [sideFilter, setSideFilter] = useState<'all' | Side>('all');
@@ -57,6 +57,11 @@ export function GuestManager() {
   const [editing, setEditing] = useState<Guest | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<GuestDraft>(() => createDraft());
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (focusPendingSignal > 0) setRsvpFilter('pending');
+  }, [focusPendingSignal]);
 
   const filtered = useMemo(() => {
     const search = query.trim().toLocaleLowerCase('ja-JP');
@@ -122,10 +127,15 @@ export function GuestManager() {
     }
 
     closeForm();
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2500);
   }
 
   return (
     <section aria-label="ゲスト管理">
+      {saved && (
+        <div className="toast" role="status">保存しました</div>
+      )}
       <button
         type="button"
         className="btn-primary"
@@ -244,6 +254,9 @@ export function GuestManager() {
               onChange={(event) => updateDraft('memo', event.target.value)}
             />
           </label>
+          {!draft.name.trim() && (
+            <p className="muted" style={{ margin: 0 }}>名前を入力すると保存できます</p>
+          )}
           <button type="submit" className="btn-primary" disabled={!draft.name.trim()}>
             保存
           </button>
@@ -303,7 +316,7 @@ export function GuestManager() {
                 <span className="badge">{SIDE_LABELS[guest.side]}</span>{' '}
                 <span className="badge">{GROUP_LABELS[guest.group]}</span>{' '}
                 {guest.allergy && (
-                  <span className="badge badge-allergy">アレルギー：{guest.allergy}</span>
+                  <span className="badge badge-allergy">⚠ アレルギー：{guest.allergy}</span>
                 )}
                 {guest.companions > 0 && <span>（同伴{guest.companions}名）</span>}
               </div>
@@ -317,7 +330,19 @@ export function GuestManager() {
                     type="button"
                     className={guest.rsvp === rsvp ? `on-${rsvp}` : undefined}
                     aria-pressed={guest.rsvp === rsvp}
-                    onClick={() => dispatch({ type: 'setRsvp', guestId: guest.id, rsvp })}
+                    onClick={() => {
+                      if (
+                        rsvp !== 'attending' &&
+                        guest.rsvp === 'attending' &&
+                        state.assignments[guest.id] &&
+                        !window.confirm(
+                          `${guest.name}さんは席次表に配置されています。出欠を変更すると席も外れます。よろしいですか？`,
+                        )
+                      ) {
+                        return;
+                      }
+                      dispatch({ type: 'setRsvp', guestId: guest.id, rsvp });
+                    }}
                   >
                     {label}
                   </button>

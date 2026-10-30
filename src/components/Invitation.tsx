@@ -26,7 +26,7 @@ export function Invitation() {
   const { state, dispatch } = useAppState();
   const info = state.info;
   const [guestId, setGuestId] = useState(state.guests[0]?.id ?? '');
-  const [rsvp, setRsvp] = useState<RsvpStatus>('attending');
+  const [rsvp, setRsvp] = useState<RsvpStatus | null>(null);
   const [companions, setCompanions] = useState(0);
   const [allergy, setAllergy] = useState('');
   const [memo, setMemo] = useState('');
@@ -63,7 +63,7 @@ export function Invitation() {
   const guest = state.guests.find((item) => item.id === guestId);
 
   function submitResponse() {
-    if (!guest) return;
+    if (!guest || !rsvp) return;
 
     dispatch({
       type: 'updateGuest',
@@ -92,7 +92,7 @@ export function Invitation() {
         <p>{info.venue}</p>
         <p style={{ whiteSpace: 'pre-wrap' }}>{info.message}</p>
         {days !== null && (
-          <p>{days > 0 ? `あと${days}日` : '当日です'}</p>
+          <p>{days > 0 ? `挙式まで あと${days}日` : '当日です'}</p>
         )}
       </div>
 
@@ -173,14 +173,14 @@ export function Invitation() {
             onChange={(event) => setMemo(event.target.value)}
           />
 
-          <button type="submit" className="btn primary" disabled={!guest}>
+          <button type="submit" className="btn primary" disabled={!guest || !rsvp}>
             送信する
           </button>
         </form>
 
         {sent && (
           <div className="toast" role="status">
-            回答を送信しました。名簿に反映されています。
+            {guest ? `${guest.name}さんの回答（${rsvp === 'attending' ? '出席' : '欠席'}）` : '回答'}を送信しました。名簿に反映されています。
           </div>
         )}
       </div>

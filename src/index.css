@@ -4,7 +4,7 @@
   --surface: #FFFFFF;
   --surface-2: #F5EEE6;
   --ink: #33272E;
-  --muted: #8A7F86;
+  --muted: #6F6068;
   --line: #EADFD4;
   --rose: #B76E79;
   --rose-deep: #9A5561;
@@ -642,4 +642,46 @@ textarea.input {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/* ==== UX改善（監査対応） ==== */
+.stat-num { color: var(--rose-deep); }
+.seg button.on-attending, .seg button.on-pending, .seg button.on-declined {
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2px rgba(51, 39, 46, .28);
+}
+.chip.selected {
+  border: 2px solid var(--gold);
+  background: var(--gold-soft);
+  font-weight: 700;
+}
+.badge-allergy {
+  background: #FBEAE8;
+  color: #A52A21;
+  border: 1px solid #E5A49E;
+  font-weight: 700;
+}
+.seat { width: 78px; height: 78px; font-size: .8rem; }
+.seat-name-line { display: block; line-height: 1.25; }
+.seat-no {
+  position: absolute; top: 3px; left: 7px;
+  font-size: 9px; color: var(--muted); font-weight: 700;
+}
+.seat.armed {
+  outline: 3px solid #C0392B;
+  outline-offset: 1px;
+  background: #FDF0EE;
+}
+.hint-action {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  font: inherit; border: 1px solid var(--gold);
+}
+.table-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.row-actions { display: inline-flex; gap: 8px; margin-left: 14px; }
+.arm-hint {
+  background: #FDF0EE; border: 1px solid #E5A49E; color: #A52A21;
+  border-radius: var(--r-md); padding: 8px 12px; margin-bottom: 12px; font-weight: 600;
+}
+@media (max-width: 640px) {
+  .seat { width: 62px; height: 62px; }
 }

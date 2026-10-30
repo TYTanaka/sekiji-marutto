@@ -10,27 +10,19 @@ import { summarize } from '../lib/stats';
 import type { Guest, TableDef } from '../types';
 
 function tableSuggestion(tables: TableDef[]): string {
-  let index = tables.length;
-
-  while (true) {
-    let value = index + 1;
-    let letters = '';
-
-    while (value > 0) {
-      value -= 1;
-      letters = String.fromCharCode(65 + (value % 26)) + letters;
-      value = Math.floor(value / 26);
-    }
-
-    const name = `${letters}卓`;
-    if (!tables.some((table) => table.name === name)) return name;
-    index += 1;
-  }
+  const letters = tables
+    .map((t) => /^([A-Z])卓$/.exec(t.name)?.[1])
+    .filter((c): c is string => Boolean(c))
+    .sort();
+  if (letters.length === 0) return 'A卓';
+  const next = String.fromCharCode(letters[letters.length - 1].charCodeAt(0) + 1);
+  return `${next}卓`;
 }
 
 export function SeatingEditor() {
   const { state, dispatch } = useAppState();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [armedSeat, setArmedSeat] = useState<string | null>(null);
   const dragId = useRef<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const suppressClick = useRef(false);
@@ -169,7 +161,14 @@ export function SeatingEditor() {
             </button>
           ))}
         </div>
+        <p className="muted">
+          チップを選んでから空席をタップすると配置できます。ドラッグでも移動できます。配置した席を外すときは、席を2回タップしてください。
+        </p>
       </section>
+
+      {armedSeat && (
+        <p className="arm-hint">席を外すには、もう一度同じ席をタップしてください。</p>
+      )}
 
       <div className="tables-grid">
         {state.tables.map((table: TableDef) => {
@@ -227,7 +226,8 @@ export function SeatingEditor() {
                       type="button"
                       className={
                         'seat ' + (occupant ? 'filled' : 'empty') +
-                        (selectedId && !occupant ? ' target' : '')
+                        (selectedId && !occupant ? ' target' : '') +
+                        (armedSeat === `${table.id}:${i}` ? ' armed' : '')
                       }
                       data-seat={`${table.id}:${i}`}
                       style={{
@@ -252,20 +252,34 @@ export function SeatingEditor() {
                       onClick={() => {
                         if (consumeDragClick()) return;
                         if (occupant) {
-                          dispatch({ type: 'unassign', guestId: occupant.id });
+                          const key = `${table.id}:${i}`;
+                          if (armedSeat === key) {
+                            dispatch({ type: 'unassign', guestId: occupant.id });
+                            setArmedSeat(null);
+                          } else {
+                            setArmedSeat(key);
+                          }
                         } else if (selectedId) {
                           dispatch({
                             type: 'assign', guestId: selectedId,
                             tableId: table.id, seatIndex: i,
                           });
                           setSelectedId(null);
+                          setArmedSeat(null);
                         }
                       }}
                     >
                       {occupant ? (
                         <>
-                          <span>{occupant.name}</span>
-                          {i === 0 && <span className="badge-kamiza">上座</span>}
+                          <span className="seat-no">{i + 1}</span>
+                          {occupant.name.split(' ').map((part, k) => (
+                            <span key={k} className="seat-name-line">{part}</span>
+                          ))}
+                          {armedSeat === `${table.id}:${i}` ? (
+                            <span className="badge-kamiza" style={{ background: '#C0392B', color: '#fff' }}>外す？</span>
+                          ) : (
+                            i === 0 && <span className="badge-kamiza">上座</span>
+                          )}
                         </>
                       ) : i === 0 ? '上座' : `${i + 1}`}
                     </button>
@@ -296,7 +310,7 @@ export function SeatingEditor() {
         <button type="button" onClick={addTable}>追加</button>
       </div>
       <p className="seating-note">
-        席をタップすると配置を外せます。チップを選んでから空席をタップしても配置できます。ドラッグでも移動できます。
+        配置した席を外すときは、席をタップして確認表示を出してから、もう一度タップしてください。
       </p>
     </div>
   );

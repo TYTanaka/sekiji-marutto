@@ -2,13 +2,19 @@ import { useAppState } from '../store/appState';
 import { summarize, nextActionHint } from '../lib/stats';
 import { tableFill } from '../lib/seating';
 
-export function Dashboard() {
+export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
   const { state } = useAppState();
   const sum = summarize(state);
 
   return (
     <section className="view-enter">
-      <div className="hint">{nextActionHint(state)}</div>
+      {sum.pending > 0 && onShowPending ? (
+        <button type="button" className="hint hint-action" onClick={onShowPending}>
+          {nextActionHint(state)}（タップで未回答のゲスト一覧へ）
+        </button>
+      ) : (
+        <div className="hint">{nextActionHint(state)}</div>
+      )}
 
       <div className="grid-stats">
         <div className="stat-card">
