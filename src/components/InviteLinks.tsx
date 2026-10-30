@@ -1,111 +1,150 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useAppState } from '../store/appState';
+import {
+  inviteUrlFor,
+  buildInviteMessage,
+  buildReminderMessage,
+} from '../lib/reminder';
 import { RSVP_LABELS } from '../types';
-
-async function copyText(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return;
-  } catch {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.readOnly = true;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    textarea.style.pointerEvents = 'none';
-
-    const previousFocus = document.activeElement;
-    document.body.appendChild(textarea);
-
-    try {
-      textarea.focus();
-      textarea.select();
-      textarea.setSelectionRange(0, text.length);
-
-      if (!document.execCommand('copy')) {
-        throw new Error('コピーに失敗しました。');
-      }
-    } finally {
-      textarea.remove();
-      if (previousFocus instanceof HTMLElement) {
-        previousFocus.focus();
-      }
-    }
-  }
-}
 
 export function InviteLinks() {
   const { state } = useAppState();
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [copyError, setCopyError] = useState('');
-  const base = window.location.origin + window.location.pathname;
+  const [openQrId, setOpenQrId] = useState<string | null>(null);
+  const inputRefs = useRef(new Map<string, HTMLInputElement>());
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function handleCopy(id: string, link: string): Promise<void> {
-    setCopyError('');
+  useEffect(() => {
+    return () => {
+      if (feedbackTimer.current !== null) {
+        clearTimeout(feedbackTimer.current);
+      }
+    };
+  }, []);
 
+  async function copyText(id: string, text: string) {
     try {
-      await copyText(link);
+      await navigator.clipboard.writeText(text);
+
+      if (feedbackTimer.current !== null) {
+        clearTimeout(feedbackTimer.current);
+      }
+
       setCopiedId(id);
-      window.setTimeout(() => {
-        setCopiedId((current) => (current === id ? null : current));
+      feedbackTimer.current = setTimeout(() => {
+        setCopiedId(null);
+        feedbackTimer.current = null;
       }, 2000);
     } catch {
-      setCopyError('コピーできませんでした。リンクを選択してコピーしてください。');
+      const input = inputRefs.current.get(id);
+      input?.focus();
+      input?.select();
     }
   }
 
   return (
-    <div className="card">
-      <h2>招待リンク（ゲストごと）</h2>
-      <p>
-        ゲストごとに専用リンクを送ると、ログインなしで招待状の確認と出欠回答ができます。回答は名簿へ自動で反映されます。
+    <section className="card">
+      <h2>ゲスト別 招待リンク</h2>
+      <p className="muted">
+        ゲストごとの招待リンクをコピーするか、LINEで送れます。
+        QRコードは紙の案内状などにご利用いただけます。
       </p>
 
-      {copyError && <p role="alert">{copyError}</p>}
+      {state.guests.map((guest) => {
+        const id = String(guest.id);
+        const url = inviteUrlFor(guest.inviteToken);
+        const text = buildInviteMessage(guest, state.info, url);
+        const isQrOpen = openQrId === id;
 
-      {state.guests.length === 0 ? (
-        <p>ゲストがまだいません。</p>
-      ) : (
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {state.guests.map((guest) => {
-            const link = `${base}#/rsvp/${guest.inviteToken}`;
+        return (
+          <div className="guest-row" key={guest.id}>
+            <div>
+              <strong>{guest.name}</strong>{' '}
+              <span className={`badge ${guest.rsvp}`}>
+                {RSVP_LABELS[guest.rsvp]}
+              </span>
+            </div>
 
-            return (
-              <li key={guest.id} style={{ padding: '12px 0', minWidth: 0 }}>
-                <div>
-                  <strong>{guest.name}</strong>{' '}
-                  <small>{guest.title}</small>{' '}
-                  <span className="badge">{RSVP_LABELS[guest.rsvp]}</span>
+            <input
+              ref={(input) => {
+                if (input) {
+                  inputRefs.current.set(id, input);
+                } else {
+                  inputRefs.current.delete(id);
+                }
+              }}
+              className="input"
+              type="text"
+              value={url}
+              readOnly
+              aria-label={`${guest.name}さんの招待リンク`}
+            />
+
+            <div className="row-actions">
+              <button
+                className="btn btn-primary"
+                type="button"
+                aria-label={`${guest.name}さんの招待リンクをコピー`}
+                onClick={() => void copyText(id, url)}
+              >
+                コピー
+              </button>
+
+              <a
+                className="btn line-btn"
+                href={`https://line.me/R/msg/text/?${encodeURIComponent(text)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                LINEで送る
+              </a>
+
+              <button
+                className="btn btn-ghost"
+                type="button"
+                aria-label={`${guest.name}さんのQRコードを${isQrOpen ? '閉じる' : '表示'}`}
+                aria-expanded={isQrOpen}
+                onClick={() => setOpenQrId(isQrOpen ? null : id)}
+              >
+                QRコード
+              </button>
+
+              {guest.rsvp === 'pending' && (
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={() =>
+                    void copyText(
+                      id,
+                      buildReminderMessage(guest, state.info, url),
+                    )
+                  }
+                >
+                  催促文をコピー
+                </button>
+              )}
+
+              <span className="muted" role="status" aria-live="polite">
+                {copiedId === id ? 'コピーしました' : ''}
+              </span>
+            </div>
+
+            {isQrOpen && (
+              <div>
+                <div
+                  className="qr-box"
+                  role="img"
+                  aria-label={`${guest.name}さんの招待リンクのQRコード`}
+                >
+                  <QRCodeSVG value={url} size={148} />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="text"
-                    readOnly
-                    value={link}
-                    aria-label={`${guest.name}の招待リンク`}
-                    title={link}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      fontSize: '0.8rem',
-                      overflow: 'hidden',
-                      whiteSpace: 'nowrap',
-                      textOverflow: 'ellipsis',
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="btn-ghost"
-                    onClick={() => void handleCopy(guest.id, link)}
-                  >
-                    {copiedId === guest.id ? 'コピーしました' : 'コピー'}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+                <p className="muted">紙の案内状などに印刷できます</p>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </section>
   );
 }

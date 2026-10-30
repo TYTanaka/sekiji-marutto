@@ -36,12 +36,21 @@ export type Assignments = Record<
   { tableId: string; seatIndex: number }
 >;
 
+export interface PrepTask {
+  id: string;
+  title: string;
+  /** 挙式日からの相対期日（ISO日付）。未設定も可 */
+  dueDate?: string;
+  done: boolean;
+}
+
 export interface AppState {
   version: number;
   guests: Guest[];
   tables: TableDef[];
   assignments: Assignments;
   info: WeddingInfo;
+  tasks: PrepTask[];
 }
 
 export const GROUP_LABELS: Record<GuestGroup, string> = {

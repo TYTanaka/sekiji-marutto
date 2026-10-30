@@ -13,9 +13,11 @@ import type {
   WeddingInfo,
   RsvpStatus,
   Assignments,
+  PrepTask,
 } from '../types';
 import { createSeedState } from '../lib/seed';
 import { validateAssignment } from '../lib/seating';
+import { createDefaultTasks } from '../lib/tasks';
 
 export type Action =
   | { type: 'addGuest'; guest: Guest }
@@ -29,6 +31,9 @@ export type Action =
   | { type: 'unassign'; guestId: string }
   | { type: 'setInfo'; info: WeddingInfo }
   | { type: 'reset' }
+  | { type: 'addTask'; task: PrepTask }
+  | { type: 'toggleTask'; taskId: string }
+  | { type: 'removeTask'; taskId: string }
   | { type: 'hydrate'; state: AppState };
 
 const STORAGE_KEY = 'sekiji-state-v2';
@@ -160,8 +165,20 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case 'reset':
       return createSeedState();
+    case 'addTask':
+      return { ...state, tasks: [...state.tasks, action.task] };
+    case 'toggleTask':
+      return {
+        ...state,
+        tasks: state.tasks.map((t) => (t.id === action.taskId ? { ...t, done: !t.done } : t)),
+      };
+    case 'removeTask':
+      return { ...state, tasks: state.tasks.filter((t) => t.id !== action.taskId) };
     case 'hydrate':
-      return action.state.version === 2 ? action.state : state;
+      if (action.state.version !== 2) return state;
+      return Array.isArray(action.state.tasks)
+        ? action.state
+        : { ...action.state, tasks: createDefaultTasks(action.state.info.date) };
   }
 }
 
@@ -196,7 +213,9 @@ export function loadInitialState(): AppState {
       const parsed: unknown = JSON.parse(stored);
 
       if (hasMinimalShape(parsed)) {
-        return parsed;
+        return Array.isArray(parsed.tasks)
+          ? parsed
+          : { ...parsed, tasks: createDefaultTasks(parsed.info.date) };
       }
     }
   } catch {

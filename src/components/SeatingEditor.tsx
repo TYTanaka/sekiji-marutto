@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { proposeAssignments } from '../lib/autoSeat';
 import { useAppState } from '../store/appState';
 import {
   seatPosition,
@@ -29,6 +30,7 @@ export function SeatingEditor() {
   const stopDrag = useRef<(() => void) | null>(null);
   const [newTableName, setNewTableName] = useState('');
   const [newTableSeats, setNewTableSeats] = useState(8);
+  const [autoNotice, setAutoNotice] = useState('');
 
   const unassigned = unassignedAttending(state);
   const suggestion = tableSuggestion(state.tables);
@@ -120,8 +122,26 @@ export function SeatingEditor() {
     setNewTableName('');
   }
 
+  function applyAutoSeat() {
+    const proposal = proposeAssignments(state);
+    const entries = Object.entries(proposal);
+    entries.forEach(([guestId, a]) => {
+      dispatch({ type: 'assign', guestId, tableId: a.tableId, seatIndex: a.seatIndex });
+    });
+    setAutoNotice(entries.length > 0 ? `${entries.length}名を仮配置しました。ドラッグやタップで調整できます。` : '仮配置できるゲストはいませんでした。');
+  }
+
   return (
     <div className="seating-editor">
+      {unassigned.length > 0 && (
+        <div className="table-controls">
+          <button type="button" className="btn btn-primary" onClick={applyAutoSeat}>
+            席次を自動で提案する
+          </button>
+          <span className="muted">同じ側・同じグループの方が同じ卓になるよう、上座を配慮して仮配置します</span>
+        </div>
+      )}
+      {autoNotice && <div className="hint" role="status">{autoNotice}</div>}
       {summary.allSeated && (
         <div className="celebration">全員の席が決まりました。</div>
       )}

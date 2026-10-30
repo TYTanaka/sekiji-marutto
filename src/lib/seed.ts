@@ -1,4 +1,5 @@
 import type { AppState } from '../types';
+import { createDefaultTasks } from './tasks';
 
 export function createSeedState(): AppState {
   return {
@@ -16,6 +17,7 @@ export function createSeedState(): AppState {
       { id: 'table-c', name: 'C卓', seats: 8 },
       { id: 'table-d', name: 'D卓', seats: 6 },
     ],
+    tasks: createDefaultTasks('2027-04-18'),
     guests: [
       {
         id: 'g1',

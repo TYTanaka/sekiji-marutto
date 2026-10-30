@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppState } from '../store/appState';
 import type { RsvpStatus } from '../types';
+import heroUrl from '../assets/hero.jpg';
 
 function parseDate(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -75,6 +76,7 @@ export function Invitation() {
   return (
     <section className="view-enter">
       <div className="invitation">
+        <img className="hero-img" src={heroUrl} alt="" aria-hidden="true" />
         <p
           style={{
             color: '#a18449',

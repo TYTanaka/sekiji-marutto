@@ -6,6 +6,7 @@ import {
   type InvitationData,
 } from '../lib/supabase';
 import { useAppState } from '../store/appState';
+import heroUrl from '../assets/hero.jpg';
 
 type RsvpPageProps = {
   token: string;
@@ -39,6 +40,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
   const [allergy, setAllergy] = useState('');
   const [memo, setMemo] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [summary, setSummary] = useState<{ rsvp: Choice; companions: number; allergy: string; memo: string } | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -127,6 +129,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
           },
         });
       }
+      setSummary({ rsvp: choice, companions: companionCount, allergy, memo });
       setStatus('submitted');
     } catch {
       setError('送信に失敗しました。時間をおいて再度お試しください。');
@@ -135,13 +138,34 @@ export default function RsvpPage({ token }: RsvpPageProps) {
     }
   }
 
+  if (status === 'submitted' && summary) {
+    return (
+      <main className="rsvp-page">
+        <section className="card rsvp-summary" role="status" aria-live="polite">
+          <h2 className="rsvp-title">回答を受け付けました</h2>
+          <p>ありがとうございました。以下の内容で承っています。</p>
+          <dl className="summary-list">
+            <div><dt>出欠</dt><dd>{summary.rsvp === 'attending' ? '出席' : '欠席'}</dd></div>
+            {summary.rsvp === 'attending' && (
+              <div><dt>同伴者数</dt><dd>{summary.companions}名</dd></div>
+            )}
+            <div><dt>アレルギー</dt><dd>{summary.allergy || 'なし'}</dd></div>
+            <div><dt>メッセージ</dt><dd>{summary.memo || 'なし'}</dd></div>
+          </dl>
+          <p className="muted">内容を変更したい場合は、もう一度回答できます。</p>
+          <button type="button" className="btn btn-primary" onClick={() => setStatus('ready')}>
+            回答を変更する
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   if (status !== 'ready' || !invitation) {
     const text =
       status === 'loading'
         ? '読み込み中…'
-        : status === 'submitted'
-          ? '回答を受け付けました。ありがとうございました。'
-          : '招待が見つかりませんでした。リンクをご確認ください。';
+        : '招待が見つかりませんでした。リンクをご確認ください。';
     return (
       <main className="rsvp-page">
         <section className="card" role="status" aria-live="polite">
@@ -156,6 +180,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
   return (
     <main className="rsvp-page">
       <section className="invitation" aria-labelledby="invitation-title">
+        <img className="hero-img" src={heroUrl} alt="" aria-hidden="true" />
         <p style={{ fontVariant: 'small-caps', letterSpacing: '0.18em' }}>
           Wedding Invitation
         </p>

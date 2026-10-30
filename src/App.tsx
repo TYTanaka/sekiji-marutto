@@ -9,14 +9,16 @@ import { PrintView } from './components/PrintView';
 import RsvpPage from './components/RsvpPage';
 import { CloudSync } from './store/cloudSync';
 import { AuthPanel } from './components/AuthPanel';
+import { TasksView } from './components/TasksView';
 
-type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'print' | 'settings';
+type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'tasks' | 'print' | 'settings';
 
 const tabs: { view: View; label: string }[] = [
   { view: 'dashboard', label: '概要' },
   { view: 'guests', label: 'ゲスト・出欠' },
   { view: 'seating', label: '席次表' },
   { view: 'invitation', label: '招待状' },
+  { view: 'tasks', label: '準備' },
   { view: 'print', label: '印刷' },
   { view: 'settings', label: '設定' },
 ];
@@ -42,6 +44,7 @@ function Shell() {
             <button
               key={tab.view}
               id={`tab-${tab.view}`}
+              className="tab"
               type="button"
               role="tab"
               aria-selected={view === tab.view}
@@ -65,6 +68,7 @@ function Shell() {
           {view === 'guests' && <GuestManager focusPendingSignal={focusPending} />}
           {view === 'seating' && <SeatingEditor />}
           {view === 'invitation' && (<><Invitation /><InviteLinks /></>)}
+          {view === 'tasks' && <TasksView />}
           {view === 'print' && <PrintView />}
         </div>
 

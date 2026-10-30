@@ -1,13 +1,47 @@
+import { useState } from 'react';
 import { useAppState } from '../store/appState';
 import { summarize, nextActionHint } from '../lib/stats';
 import { tableFill } from '../lib/seating';
+import { buildReminderMessage, inviteUrlFor } from '../lib/reminder';
+import heroUrl from '../assets/hero.jpg';
+
+function daysUntil(iso: string): number | null {
+  const target = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(target.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
+}
 
 export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
   const { state } = useAppState();
   const sum = summarize(state);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const pendingGuests = state.guests.filter((g) => g.rsvp === 'pending');
+  const days = daysUntil(state.info.date);
+
+  async function copyReminder(guestId: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(guestId);
+      window.setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      setCopiedId(null);
+    }
+  }
 
   return (
     <section className="view-enter">
+      <div className="hero-band">
+        <img className="hero-band-img" src={heroUrl} alt="" aria-hidden="true" />
+        <div className="hero-band-body">
+          <p className="hero-kicker">Wedding Day</p>
+          <p className="hero-names">{state.info.groomName} ＆ {state.info.brideName}</p>
+          <p className="hero-meta">{state.info.date.replaceAll('-', '/')} ・ {state.info.venue}</p>
+          {days !== null && days >= 0 && <p className="hero-chip">挙式まで あと {days} 日</p>}
+          {days !== null && days < 0 && <p className="hero-chip">ご結婚おめでとうございます</p>}
+        </div>
+      </div>
       {sum.pending > 0 && onShowPending ? (
         <button type="button" className="hint hint-action" onClick={onShowPending}>
           {nextActionHint(state)}（タップで未回答のゲスト一覧へ）
@@ -67,6 +101,30 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
           <div className="celebration">全員の席が決まりました。</div>
         )}
       </div>
+
+      {pendingGuests.length > 0 && (
+        <div className="card">
+          <h2>未回答のゲストへの催促サポート</h2>
+          <p className="muted">そのまま送れる丁寧な文面を用意しました。コピーして普段の連絡手段で送るか、LINEで直接送れます。</p>
+          {pendingGuests.map((guest) => {
+            const url = inviteUrlFor(guest.inviteToken);
+            const text = buildReminderMessage(guest, state.info, url);
+            return (
+              <div key={guest.id} className="guest-row">
+                <span>{guest.name} 様</span>
+                <span className="row-actions">
+                  <button type="button" className="btn btn-ghost" onClick={() => void copyReminder(guest.id, text)}>
+                    {copiedId === guest.id ? 'コピーしました' : '催促文をコピー'}
+                  </button>
+                  <a className="btn line-btn" href={`https://line.me/R/msg/text/?${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">
+                    LINEで送る
+                  </a>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
