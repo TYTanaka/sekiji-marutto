@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   cloudEnabled,
   fetchInvitation,
@@ -44,7 +44,15 @@ export default function RsvpPage({ token }: RsvpPageProps) {
   const [summary, setSummary] = useState<{ rsvp: Choice; companions: number; allergy: string; memo: string } | null>(null);
   const [error, setError] = useState('');
 
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const loadedTokenRef = useRef<string | null>(null);
+
   useEffect(() => {
+    // Load once per token. Re-running on every state.guests change would wipe
+    // the form mid-typing and bounce a just-submitted guest back to the form.
+    if (loadedTokenRef.current === token) return;
+    loadedTokenRef.current = token;
     let cancelled = false;
     setStatus('loading');
     setInvitation(null);
@@ -57,13 +65,14 @@ export default function RsvpPage({ token }: RsvpPageProps) {
 
     async function load() {
       try {
+        const current = stateRef.current;
         const guest = cloudEnabled
           ? undefined
-          : state.guests.find((item) => item.inviteToken === token);
+          : current.guests.find((item) => item.inviteToken === token);
         const data: InvitationData | null = cloudEnabled
           ? await fetchInvitation(token)
           : guest
-            ? { info: state.info, guest }
+            ? { info: current.info, guest }
             : null;
 
         if (cancelled) return;
@@ -93,7 +102,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [token, state.info, state.guests]);
+  }, [token]);
 
   async function handleSubmit() {
     if (!invitation || choice === null || submitting) return;

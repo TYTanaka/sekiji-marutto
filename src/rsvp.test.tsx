@@ -16,6 +16,15 @@ describe('RSVP public page (local mode)', () => {
     expect(submit.disabled).toBe(false)
   })
 
+  it('keeps the confirmation screen after submitting (does not bounce back to the form)', () => {
+    window.location.hash = '#/rsvp/inv-1gx8qe64'
+    render(<App />)
+    fireEvent.click(screen.getByRole('button', { name: '欠席' }))
+    fireEvent.click(screen.getByRole('button', { name: '送信する' }))
+    expect(screen.getByText('回答を受け付けました')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: '送信する' })).toBeNull()
+  })
+
   it('shows not-found for an unknown token', () => {
     window.location.hash = '#/rsvp/inv-unknown00'
     render(<App />)
