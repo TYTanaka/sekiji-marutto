@@ -1,4 +1,10 @@
 import type { AppState, Assignments, Guest } from '../types';
+import { GROUP_LABELS, SIDE_LABELS } from '../types';
+
+export interface ProposalWithReasons {
+  assignments: Assignments;
+  reasons: Record<string, string[]>;
+}
 
 const VIP_PATTERN = /部長|社長|専務|課長|先生|主賓|上司/;
 
@@ -17,6 +23,10 @@ function seatPriority(guest: Guest): number {
  * 役職者や親族を上座側から配置する。
  */
 export function proposeAssignments(state: AppState): Assignments {
+  return proposeAssignmentsWithReasons(state).assignments;
+}
+
+export function proposeAssignmentsWithReasons(state: AppState): ProposalWithReasons {
   const occupied = new Map<string, Set<number>>();
   for (const table of state.tables) occupied.set(table.id, new Set());
   for (const a of Object.values(state.assignments)) {
@@ -43,6 +53,8 @@ export function proposeAssignments(state: AppState): Assignments {
 
   const sortedBuckets = [...buckets.values()].sort((a, b) => b.length - a.length);
   const proposal: Assignments = {};
+  const reasons: Record<string, string[]> = {};
+  const placedByTableBucket = new Map<string, Guest[]>();
 
   for (const bucket of sortedBuckets) {
     const ordered = [...bucket].sort((a, b) => seatPriority(a) - seatPriority(b));
@@ -58,8 +70,28 @@ export function proposeAssignments(state: AppState): Assignments {
       const seatIndex = best.seats[0];
       proposal[guest.id] = { tableId: best.tableId, seatIndex };
       occupied.get(best.tableId)?.add(seatIndex);
+
+      const guestReasons: string[] = [];
+      if (seatPriority(guest) === 0) {
+        guestReasons.push('主賓・役職者として上座側へ');
+      } else if (seatIndex === 0) {
+        guestReasons.push('上座に配置');
+      }
+      const bucketKey = `${best.tableId}:${guest.side}:${guest.group}`;
+      const sameBucket = placedByTableBucket.get(bucketKey) ?? [];
+      if (sameBucket.length > 0) {
+        const names = sameBucket.slice(0, 2).map((g) => `${g.name}さん`).join('・');
+        guestReasons.push(
+          `同じ${SIDE_LABELS[guest.side]}・${GROUP_LABELS[guest.group]}の${names}と同じ卓`,
+        );
+      }
+      if (guestReasons.length === 0) {
+        guestReasons.push('空席のバランスを考慮して配置');
+      }
+      reasons[guest.id] = guestReasons;
+      placedByTableBucket.set(bucketKey, [...sameBucket, guest]);
     }
   }
 
-  return proposal;
+  return { assignments: proposal, reasons };
 }

@@ -1213,3 +1213,16 @@ button:not([class]):hover { background: var(--rose-soft); }
 }
 .auth-popover { margin-bottom: 16px; }
 .auth-toggle { white-space: nowrap; }
+
+/* ===== 変更レーダー・配置の理由 ===== */
+.changes-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.changes-head h2, .changes-head h3 { margin: 0; }
+.changes-note { margin: 6px 0 10px; font-size: .88rem; }
+.changes-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.changes-list li { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+.changes-when { color: var(--muted); font-size: .82rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.reasons-panel { margin: 14px 0; }
+.reasons-table { margin-top: 10px; }
+.reasons-table h4 { margin: 0 0 6px; }
+.reasons-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.reasons-list li { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }

@@ -14,7 +14,7 @@ function daysUntil(iso: string): number | null {
 }
 
 export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
-  const { state } = useAppState();
+  const { state, changes, clearChanges } = useAppState();
   const sum = summarize(state);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const pendingGuests = state.guests.filter((g) => g.rsvp === 'pending');
@@ -77,6 +77,39 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
           <div className="stat-label">未回答</div>
         </div>
       </div>
+
+      {changes.length > 0 && (
+        <div className="card changes-card">
+          <div className="changes-head">
+            <h2>最近の変更</h2>
+            <button type="button" className="btn-ghost" onClick={clearChanges}>
+              すべて確認済みにする
+            </button>
+          </div>
+          <p className="muted changes-note">
+            ゲストの回答内容にあった変更です。席次や式場への連絡に影響がないか確認してください。
+          </p>
+          <ul className="changes-list">
+            {changes.slice(0, 8).map((change) => (
+              <li key={change.id}>
+                <span className="changes-when">
+                  {(() => {
+                    const d = new Date(change.at);
+                    const pad = (n: number) => String(n).padStart(2, '0');
+                    return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  })()}
+                </span>
+                <span>
+                  <strong>{change.guestName}</strong> さん：{change.text}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {changes.length > 8 && (
+            <p className="muted">{`ほか ${changes.length - 8} 件の変更があります`}</p>
+          )}
+        </div>
+      )}
 
       <div className="card">
         <h2>卓ごとの充足状況</h2>

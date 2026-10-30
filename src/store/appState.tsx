@@ -22,6 +22,7 @@ import { createSeedState } from '../lib/seed';
 import { validateAssignment } from '../lib/seating';
 import { createDefaultTasks } from '../lib/tasks';
 import { newInviteToken } from '../lib/supabase';
+import { diffGuests, type ChangeEvent } from '../lib/changes';
 
 export type Action =
   | { type: 'addGuest'; guest: Guest }
@@ -251,6 +252,8 @@ interface AppStateContextValue {
   savedAt: Date | null;
   cloudPhase: CloudPhase;
   reportCloud: (phase: CloudPhase) => void;
+  changes: ChangeEvent[];
+  clearChanges: () => void;
 }
 
 const AppStateContext = createContext<AppStateContextValue | undefined>(
@@ -258,9 +261,54 @@ const AppStateContext = createContext<AppStateContextValue | undefined>(
 );
 
 const UNDO_WINDOW_MS = 9000;
+const CHANGES_KEY = 'sekiji-changes-v1';
+const MAX_CHANGES = 30;
+
+function loadChanges(): ChangeEvent[] {
+  try {
+    const raw = localStorage.getItem(CHANGES_KEY);
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed as ChangeEvent[];
+    }
+  } catch {
+    // Unavailable storage just means no change history.
+  }
+  return [];
+}
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
+  const [changes, setChanges] = useState<ChangeEvent[]>(loadChanges);
+  const prevGuestsRef = useRef<Guest[] | null>(null);
+
+  // 変更レーダー： ゲストの回答内容が前回から変わったら記録する。
+  // クラウド経由（ゲスト本人の回答）も、主催者の編集も、hydrate の差分として検知できる。
+  useEffect(() => {
+    const prev = prevGuestsRef.current;
+    prevGuestsRef.current = state.guests;
+    if (prev === null) return;
+    const events = diffGuests(prev, state.guests);
+    if (events.length === 0) return;
+    setChanges((current) => {
+      const merged = [...events.reverse(), ...current].slice(0, MAX_CHANGES);
+      try {
+        localStorage.setItem(CHANGES_KEY, JSON.stringify(merged));
+      } catch {
+        // Persistence is best-effort for the change feed.
+      }
+      return merged;
+    });
+  }, [state.guests]);
+
+  const clearChanges = useCallback(() => {
+    setChanges([]);
+    try {
+      localStorage.removeItem(CHANGES_KEY);
+    } catch {
+      // Ignore storage failures.
+    }
+  }, []);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [cloudPhase, setCloudPhase] = useState<CloudPhase>('idle');
   const [undoNotice, setUndoNotice] = useState<UndoNotice | null>(null);
@@ -334,6 +382,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         savedAt,
         cloudPhase,
         reportCloud,
+        changes,
+        clearChanges,
       }}
     >
       {children}

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { proposeAssignments } from '../lib/autoSeat';
+import { proposeAssignmentsWithReasons } from '../lib/autoSeat';
 import { useAppState } from '../store/appState';
 import {
   seatPosition,
@@ -123,13 +123,19 @@ export function SeatingEditor() {
     setNewTableName('');
   }
 
+  const [lastProposal, setLastProposal] = useState<{
+    assignments: Record<string, { tableId: string; seatIndex: number }>;
+    reasons: Record<string, string[]>;
+  } | null>(null);
+
   function applyAutoSeat() {
-    const proposal = proposeAssignments(state);
+    const { assignments: proposal, reasons } = proposeAssignmentsWithReasons(state);
     const entries = Object.entries(proposal);
     entries.forEach(([guestId, a]) => {
       dispatch({ type: 'assign', guestId, tableId: a.tableId, seatIndex: a.seatIndex });
     });
     setAutoNotice(entries.length > 0 ? `${entries.length}名を仮配置しました。ドラッグやタップで調整できます。` : '仮配置できるゲストはいませんでした。');
+    setLastProposal(entries.length > 0 ? { assignments: proposal, reasons } : null);
   }
 
   return (
@@ -143,6 +149,41 @@ export function SeatingEditor() {
         </div>
       )}
       {autoNotice && <div className="hint" role="status">{autoNotice}</div>}
+      {lastProposal && (
+        <div className="card reasons-panel">
+          <div className="changes-head">
+            <h3>配置の理由</h3>
+            <button type="button" className="btn-ghost" onClick={() => setLastProposal(null)}>
+              閉じる
+            </button>
+          </div>
+          {state.tables.map((table) => {
+            const rows = Object.entries(lastProposal.assignments)
+              .filter(([, a]) => a.tableId === table.id)
+              .sort(([, a], [, b]) => a.seatIndex - b.seatIndex)
+              .map(([guestId, a]) => ({
+                guest: state.guests.find((g) => g.id === guestId),
+                seatIndex: a.seatIndex,
+                reasons: lastProposal.reasons[guestId] ?? [],
+              }))
+              .filter((row) => row.guest);
+            if (rows.length === 0) return null;
+            return (
+              <div key={table.id} className="reasons-table">
+                <h4>{table.name}</h4>
+                <ul className="reasons-list">
+                  {rows.map((row) => (
+                    <li key={row.guest!.id}>
+                      <span>{`${row.seatIndex + 1}番席 ${row.guest!.name}さん`}</span>
+                      <span className="muted">{row.reasons.join('／')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      )}
       {summary.allSeated && (
         <div className="celebration">全員の席が決まりました。</div>
       )}
