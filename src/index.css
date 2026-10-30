@@ -637,7 +637,7 @@ textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
 
 /* ===== 印刷 ===== */
 @media print {
-  .app-header, .no-print { display: none !important; }
+  .app-header, .app-footer, .no-print { display: none !important; }
   body { background: white; }
   .main, .print-area { max-width: none; padding: 0; }
   .print-area .card, .print-area .stat-card, .print-area .table-wrap, .print-area .invitation {
