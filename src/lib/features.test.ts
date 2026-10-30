@@ -70,3 +70,19 @@ describe('proposeAssignments', () => {
     expect(proposeAssignments(full)).toEqual({});
   });
 });
+
+describe('normalizeState（旧データ移行）', () => {
+  it('inviteTokenを持たないゲストにトークンを補完する', async () => {
+    const { normalizeState } = await import('../store/appState');
+    const state = createSeedState();
+    const legacy = {
+      ...state,
+      guests: state.guests.map((g) => ({ ...g, inviteToken: '' })),
+    } as unknown as ReturnType<typeof createSeedState>;
+    const normalized = normalizeState(legacy);
+    expect(normalized.guests.every((g) => g.inviteToken.startsWith('inv-'))).toBe(true);
+    // 既存トークンは保持される
+    const kept = normalizeState(state);
+    expect(kept.guests[0].inviteToken).toBe(state.guests[0].inviteToken);
+  });
+});

@@ -18,6 +18,7 @@ import type {
 import { createSeedState } from '../lib/seed';
 import { validateAssignment } from '../lib/seating';
 import { createDefaultTasks } from '../lib/tasks';
+import { newInviteToken } from '../lib/supabase';
 
 export type Action =
   | { type: 'addGuest'; guest: Guest }
@@ -176,9 +177,7 @@ export function reducer(state: AppState, action: Action): AppState {
       return { ...state, tasks: state.tasks.filter((t) => t.id !== action.taskId) };
     case 'hydrate':
       if (action.state.version !== 2) return state;
-      return Array.isArray(action.state.tasks)
-        ? action.state
-        : { ...action.state, tasks: createDefaultTasks(action.state.info.date) };
+      return normalizeState(action.state);
   }
 }
 
@@ -205,6 +204,15 @@ function hasMinimalShape(value: unknown): value is AppState {
   );
 }
 
+export function normalizeState(state: AppState): AppState {
+  const guests = state.guests.map((g) =>
+    g.inviteToken ? g : { ...g, inviteToken: newInviteToken() },
+  );
+  const tasks = Array.isArray(state.tasks) ? state.tasks : createDefaultTasks(state.info.date);
+  if (guests.every((g, i) => g === state.guests[i]) && tasks === state.tasks) return state;
+  return { ...state, guests, tasks };
+}
+
 export function loadInitialState(): AppState {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -213,9 +221,7 @@ export function loadInitialState(): AppState {
       const parsed: unknown = JSON.parse(stored);
 
       if (hasMinimalShape(parsed)) {
-        return Array.isArray(parsed.tasks)
-          ? parsed
-          : { ...parsed, tasks: createDefaultTasks(parsed.info.date) };
+        return normalizeState(parsed);
       }
     }
   } catch {
