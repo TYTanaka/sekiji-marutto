@@ -1,122 +1,161 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import { AppStateProvider, useAppState } from './store/appState';
+import { Dashboard } from './components/Dashboard';
+import { GuestManager } from './components/GuestManager';
+import { SeatingEditor } from './components/SeatingEditor';
+import { Invitation } from './components/Invitation';
+import { PrintView } from './components/PrintView';
 
-function App() {
-  const [count, setCount] = useState(0)
+type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'print';
+
+const tabs: { view: View; label: string }[] = [
+  { view: 'dashboard', label: '概要' },
+  { view: 'guests', label: 'ゲスト・出欠' },
+  { view: 'seating', label: '席次表' },
+  { view: 'invitation', label: '招待状' },
+  { view: 'print', label: '印刷' },
+];
+
+function Shell() {
+  const { state, dispatch } = useAppState();
+  const [view, setView] = useState<View>('dashboard');
+  const { info } = state;
+
+  function resetData() {
+    if (window.confirm('すべてのデータを初期状態に戻します。よろしいですか？')) {
+      dispatch({ type: 'reset' });
+    }
+  }
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
+      <header className="app-header">
+        <span className="brand">席次まるっと</span>
+        <nav className="tabs" role="tablist" aria-label="メインメニュー">
+          {tabs.map((tab) => (
+            <button
+              key={tab.view}
+              id={`tab-${tab.view}`}
+              type="button"
+              role="tab"
+              aria-selected={view === tab.view}
+              aria-controls="active-view"
+              onClick={() => setView(tab.view)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </header>
+
+      <main className="main">
+        <div
+          id="active-view"
+          role="tabpanel"
+          aria-labelledby={`tab-${view}`}
         >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+          {view === 'dashboard' && <Dashboard />}
+          {view === 'guests' && <GuestManager />}
+          {view === 'seating' && <SeatingEditor />}
+          {view === 'invitation' && <Invitation />}
+          {view === 'print' && <PrintView />}
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+        {view !== 'print' && (
+          <section className="card settings-card" aria-labelledby="settings-title">
+            <h2 id="settings-title">式の情報</h2>
+            <form onSubmit={(event) => event.preventDefault()}>
+              <div className="form-grid">
+                <label htmlFor="groom-name">
+                  新郎のお名前
+                  <input
+                    id="groom-name"
+                    type="text"
+                    value={info.groomName}
+                    onChange={(event) =>
+                      dispatch({
+                        type: 'setInfo',
+                        info: { ...info, groomName: event.target.value },
+                      })
+                    }
+                  />
+                </label>
+                <label htmlFor="bride-name">
+                  新婦のお名前
+                  <input
+                    id="bride-name"
+                    type="text"
+                    value={info.brideName}
+                    onChange={(event) =>
+                      dispatch({
+                        type: 'setInfo',
+                        info: { ...info, brideName: event.target.value },
+                      })
+                    }
+                  />
+                </label>
+                <label htmlFor="wedding-date">
+                  挙式日
+                  <input
+                    id="wedding-date"
+                    type="date"
+                    value={info.date}
+                    onChange={(event) =>
+                      dispatch({
+                        type: 'setInfo',
+                        info: { ...info, date: event.target.value },
+                      })
+                    }
+                  />
+                </label>
+                <label htmlFor="wedding-venue">
+                  会場
+                  <input
+                    id="wedding-venue"
+                    type="text"
+                    value={info.venue}
+                    onChange={(event) =>
+                      dispatch({
+                        type: 'setInfo',
+                        info: { ...info, venue: event.target.value },
+                      })
+                    }
+                  />
+                </label>
+                <label htmlFor="wedding-message">
+                  メッセージ
+                  <textarea
+                    id="wedding-message"
+                    rows={4}
+                    value={info.message}
+                    onChange={(event) =>
+                      dispatch({
+                        type: 'setInfo',
+                        info: { ...info, message: event.target.value },
+                      })
+                    }
+                  />
+                </label>
+              </div>
+            </form>
+            <div className="danger-zone">
+              <button type="button" className="btn-danger-ghost" onClick={resetData}>
+                データを初期状態に戻す
+              </button>
+            </div>
+          </section>
+        )}
+      </main>
+
+      <footer className="app-footer">
+        <small className="muted">
+          席次まるっと — ゲスト名簿・出欠・席次表をひとつに。
+        </small>
+      </footer>
     </>
-  )
+  );
 }
 
-export default App
+export default function App() {
+  return <AppStateProvider><Shell /></AppStateProvider>;
+}

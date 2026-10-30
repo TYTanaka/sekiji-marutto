@@ -1,32 +1,76 @@
-# React + TypeScript + Vite
+# 席次まるっと（Sekiji Marutto）
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+ゲスト名簿・出欠管理・席次表を、ひとつのデータでつなぐ結婚式準備Webアプリです。
+招待状への回答が出欠に、出欠が出席者だけの席次表づくりに、そのまま流れていきます。
 
-Currently, two official plugins are available:
+🔗 **公開デモ**: https://tytanaka.github.io/sekiji-marutto/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## なぜ作ったか
 
-## React Compiler
+結婚式準備では「招待状の回答を集める」「出欠を数える」「席次表を組む」が別々の作業になりがちで、
+同じゲスト情報を何度も転記する手間とミスが生まれます。
+本アプリは **1人のゲスト = 1レコード** を貫き、回答が変われば席次表の候補も即座に変わる設計で、
+この転記をなくすことを目的にしています。
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+企画背景の詳細はプロジェクト内の企画ドキュメントと、以下の設計判断をご覧ください。
 
-## Expanding the Oxlint configuration
+## 主な機能
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- **ダッシュボード**: 回答率・出席/欠席/未回答の集計、卓ごとの充足状況、「次にやること」の提示
+- **ゲスト管理**: 検索・絞り込み（新郎側/新婦側、出欠状態）、追加・編集・削除、アレルギー・同伴者・メモの管理
+- **出欠管理**: ワンタップで 出席/未回答/欠席 を切替。出席でなくなったゲストは席次から自動で外れます
+- **席次表エディタ**: 円卓レイアウト（上座マーカー付き）、ドラッグ＆ドロップ／タップの両対応、
+  定員・重複配置のバリデーション、全員配置完了の検出
+- **Web招待状プレビュー＋ゲスト回答体験**: 式情報の表示、開催日カウントダウン、
+  ゲスト側の回答フォーム（回答は名簿・席次表へ即時反映）
+- **印刷ビュー**: 卓ごとの席順リスト、印刷用レイアウト最適化
+- **自動保存**: すべての変更はブラウザに自動保存され、再訪時に復元されます
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## 技術構成と設計判断
+
+| 領域 | 選定 | 理由 |
+| --- | --- | --- |
+| 言語/基盤 | TypeScript + React 18 + Vite | 型安全なUI開発の標準構成。高速な開発体験 |
+| 状態管理 | useReducer + Context | 依存を増やさず、状態遷移（reducer）を純粋関数としてテスト可能に |
+| ドメイン層 | `src/lib/` に純粋関数を分離 | 席座標計算・配置バリデーション・集計をUIから切り離し単体テストで担保 |
+| 永続化 | localStorage（バージョン付きスキーマ＋検証） | バックエンドなしで完結させ、読み込み時は不正データを弾いて初期化 |
+| テスト | Vitest + Testing Library（18件） | ロジックだけでなく、画面遷移のスモークテストまで自動化 |
+| 配色/タイポ | デザイントークン（CSS変数）で一元管理 | 状態色（出席/未回答/欠席）を全画面で統一し、一貫した体験に |
+
+### ディレクトリ構成
+
+```
+src/
+  types.ts            ドメインモデルと表示ラベル
+  lib/                純粋関数（席配置計算・集計・初期データ）と単体テスト
+  store/              reducer + 永続化（状態遷移のテスト付き）
+  components/         画面コンポーネント（ダッシュボード/ゲスト/席次/招待状/印刷）
+docs/SPEC.md          本番仕様
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### こだわった点
+
+- **席次のバリデーションをドメイン層で一元化**：UIの操作ミスではなく「状態として不正」を防ぐ設計
+- **アクセシビリティ**：タブのARIA対応、44px以上のタップ領域、キーボードでも操作できる席選択、
+  `prefers-reduced-motion` 対応
+- **レスポンシブ**：スマホでは席次エディタがタップ配置で完結するよう設計
+
+## 開発
+
+```bash
+npm install
+npm run dev      # 開発サーバー
+npm run test     # テスト
+npm run build    # 本番ビルド
+npm run lint     # Lint
+```
+
+## 今後の拡張
+
+- 実バックエンド化（認証＋カップル間のリアルタイム共有）
+- ゲストごとの招待URL発行と回答の自動取り込み
+- 席次表PDFの高品質出力（席札・席次表レイアウトのバリエーション）
+
+---
+
+就職活動（フロントエンドエンジニア志望）のポートフォリオとして開発しています。
