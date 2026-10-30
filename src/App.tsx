@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AppStateProvider, useAppState } from './store/appState';
 import { Dashboard } from './components/Dashboard';
 import { GuestManager } from './components/GuestManager';
 import { SeatingEditor } from './components/SeatingEditor';
 import { Invitation } from './components/Invitation';
 import { PrintView } from './components/PrintView';
+import RsvpPage from './components/RsvpPage';
 
 type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'print';
 
@@ -156,6 +157,26 @@ function Shell() {
   );
 }
 
+function useRsvpToken(): string | null {
+  const [token, setToken] = useState<string | null>(() => parseRsvpToken());
+  useEffect(() => {
+    const onChange = () => setToken(parseRsvpToken());
+    window.addEventListener('hashchange', onChange);
+    return () => window.removeEventListener('hashchange', onChange);
+  }, []);
+  return token;
+}
+
+function parseRsvpToken(): string | null {
+  const match = /^#\/rsvp\/(.+)$/.exec(window.location.hash);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export default function App() {
-  return <AppStateProvider><Shell /></AppStateProvider>;
+  const rsvpToken = useRsvpToken();
+  return (
+    <AppStateProvider>
+      {rsvpToken ? <RsvpPage token={rsvpToken} /> : <Shell />}
+    </AppStateProvider>
+  );
 }
