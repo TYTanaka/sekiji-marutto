@@ -1,8 +1,11 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useReducer,
+  useRef,
+  useState,
   type Dispatch,
   type ReactNode,
 } from 'react';
@@ -231,17 +234,40 @@ export function loadInitialState(): AppState {
   return createSeedState();
 }
 
+export type CloudPhase = 'idle' | 'syncing' | 'synced' | 'error';
+
+interface UndoNotice {
+  id: number;
+  message: string;
+}
+
 interface AppStateContextValue {
   state: AppState;
   dispatch: Dispatch<Action>;
+  dispatchWithUndo: (action: Action, message: string) => void;
+  undoNotice: UndoNotice | null;
+  undo: () => void;
+  dismissUndo: () => void;
+  savedAt: Date | null;
+  cloudPhase: CloudPhase;
+  reportCloud: (phase: CloudPhase) => void;
 }
 
 const AppStateContext = createContext<AppStateContextValue | undefined>(
   undefined,
 );
 
+const UNDO_WINDOW_MS = 9000;
+
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [cloudPhase, setCloudPhase] = useState<CloudPhase>('idle');
+  const [undoNotice, setUndoNotice] = useState<UndoNotice | null>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+  const undoSnapshotRef = useRef<AppState | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     try {
@@ -249,10 +275,67 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     } catch {
       // Keep the store usable when persistence is unavailable.
     }
+    setSavedAt(new Date());
   }, [state]);
 
+  const dismissUndo = useCallback(() => {
+    setUndoNotice(null);
+    undoSnapshotRef.current = null;
+    if (undoTimerRef.current !== null) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+  }, []);
+
+  const dispatchWithUndo = useCallback((action: Action, message: string) => {
+    undoSnapshotRef.current = stateRef.current;
+    dispatch(action);
+    if (undoTimerRef.current !== null) {
+      clearTimeout(undoTimerRef.current);
+    }
+    setUndoNotice({ id: Date.now(), message });
+    undoTimerRef.current = setTimeout(() => {
+      undoTimerRef.current = null;
+      undoSnapshotRef.current = null;
+      setUndoNotice(null);
+    }, UNDO_WINDOW_MS);
+  }, []);
+
+  const undo = useCallback(() => {
+    const snapshot = undoSnapshotRef.current;
+    if (snapshot) {
+      dispatch({ type: 'hydrate', state: snapshot });
+    }
+    dismissUndo();
+  }, [dismissUndo]);
+
+  const reportCloud = useCallback((phase: CloudPhase) => {
+    setCloudPhase(phase);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (undoTimerRef.current !== null) {
+        clearTimeout(undoTimerRef.current);
+      }
+    },
+    [],
+  );
+
   return (
-    <AppStateContext.Provider value={{ state, dispatch }}>
+    <AppStateContext.Provider
+      value={{
+        state,
+        dispatch,
+        dispatchWithUndo,
+        undoNotice,
+        undo,
+        dismissUndo,
+        savedAt,
+        cloudPhase,
+        reportCloud,
+      }}
+    >
       {children}
     </AppStateContext.Provider>
   );

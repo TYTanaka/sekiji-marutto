@@ -10,7 +10,7 @@ type WeddingRow = {
 };
 
 export function CloudSync() {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, reportCloud } = useAppState();
   const stateRef = useRef(state);
   const rowIdRef = useRef<string | null>(null);
   const lastWrittenRef = useRef<string>('');
@@ -32,6 +32,7 @@ export function CloudSync() {
       rowIdRef.current = null;
       lastWrittenRef.current = '';
       setRowId(null);
+      reportCloud('idle');
       if (saveTimerRef.current !== null) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
@@ -64,6 +65,7 @@ export function CloudSync() {
         lastWrittenRef.current = JSON.stringify(row.state);
         dispatch({ type: 'hydrate', state: row.state as AppState });
         setRowId(row.id);
+        reportCloud('synced');
         return;
       }
 
@@ -85,6 +87,7 @@ export function CloudSync() {
       rowIdRef.current = insertedRow.id;
       lastWrittenRef.current = json;
       setRowId(insertedRow.id);
+      reportCloud('synced');
     };
 
     const { data: authListener } = client.auth.onAuthStateChange(
@@ -109,7 +112,7 @@ export function CloudSync() {
         saveTimerRef.current = null;
       }
     };
-  }, [dispatch]);
+  }, [dispatch, reportCloud]);
 
   useEffect(() => {
     if (!cloudEnabled || !supabase || !rowId) return;
@@ -154,6 +157,7 @@ export function CloudSync() {
     const json = JSON.stringify(state);
     if (json === lastWrittenRef.current) return;
     let cancelled = false;
+    reportCloud('syncing');
 
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
@@ -162,10 +166,17 @@ export function CloudSync() {
         const { error } = await client.from('weddings')
           .update({ state, updated_at: new Date().toISOString() })
           .eq('id', targetId);
-        if (!error && !cancelled && rowIdRef.current === targetId) {
-          lastWrittenRef.current = json;
+        if (!cancelled && rowIdRef.current === targetId) {
+          if (error) {
+            reportCloud('error');
+          } else {
+            lastWrittenRef.current = json;
+            reportCloud('synced');
+          }
         }
-      })().catch(() => undefined);
+      })().catch(() => {
+        if (!cancelled) reportCloud('error');
+      });
     }, 800);
 
     return () => {
@@ -175,7 +186,7 @@ export function CloudSync() {
         saveTimerRef.current = null;
       }
     };
-  }, [state, rowId]);
+  }, [state, rowId, reportCloud]);
 
   return null;
 }

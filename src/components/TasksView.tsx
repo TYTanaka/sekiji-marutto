@@ -19,7 +19,7 @@ function formatDueDate(date: Date): string {
 }
 
 export function TasksView() {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, dispatchWithUndo } = useAppState();
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
 
@@ -122,7 +122,10 @@ export function TasksView() {
                   type="button"
                   aria-label={`「${task.title}」を削除`}
                   onClick={() =>
-                    dispatch({ type: 'removeTask', taskId: task.id })
+                    dispatchWithUndo(
+                      { type: 'removeTask', taskId: task.id },
+                      `「${task.title}」を削除しました`,
+                    )
                   }
                 >
                   削除

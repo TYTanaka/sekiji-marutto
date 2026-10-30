@@ -50,7 +50,9 @@ function createDraft(guest: Guest | null = null): GuestDraft {
 }
 
 export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: number }) {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, dispatchWithUndo } = useAppState();
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  const [pendingRsvp, setPendingRsvp] = useState<{ guestId: string; rsvp: RsvpStatus } | null>(null);
   const [query, setQuery] = useState('');
   const [sideFilter, setSideFilter] = useState<'all' | Side>('all');
   const [rsvpFilter, setRsvpFilter] = useState<'all' | RsvpStatus>('all');
@@ -334,11 +336,9 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
                       if (
                         rsvp !== 'attending' &&
                         guest.rsvp === 'attending' &&
-                        state.assignments[guest.id] &&
-                        !window.confirm(
-                          `${guest.name}さんは席次表に配置されています。出欠を変更すると席も外れます。よろしいですか？`,
-                        )
+                        state.assignments[guest.id]
                       ) {
+                        setPendingRsvp({ guestId: guest.id, rsvp });
                         return;
                       }
                       dispatch({ type: 'setRsvp', guestId: guest.id, rsvp });
@@ -351,14 +351,49 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
               <button type="button" className="btn-ghost" aria-label={`${guest.name}さんを編集`} onClick={() => openEditor(guest)}>
                 編集
               </button>
-              <button type="button" className="btn-danger-ghost" aria-label={`${guest.name}さんを削除`} onClick={() => {
-                if (window.confirm(`${guest.name}さんを削除しますか？`)) {
-                  dispatch({ type: 'removeGuest', guestId: guest.id });
-                  if (editing?.id === guest.id) closeForm();
-                }
-              }}>
+              <button type="button" className="btn-danger-ghost" aria-label={`${guest.name}さんを削除`} onClick={() => setConfirmingDeleteId(guest.id)}>
                 削除
               </button>
+              {confirmingDeleteId === guest.id && (
+                <div className="confirm-inline">
+                  <span>{`${guest.name}さんを削除しますか？`}</span>
+                  <button
+                    type="button"
+                    className="btn-danger"
+                    onClick={() => {
+                      dispatchWithUndo(
+                        { type: 'removeGuest', guestId: guest.id },
+                        `${guest.name}さんを削除しました`,
+                      );
+                      setConfirmingDeleteId(null);
+                      if (editing?.id === guest.id) closeForm();
+                    }}
+                  >
+                    削除する
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setConfirmingDeleteId(null)}>
+                    やめる
+                  </button>
+                </div>
+              )}
+              {pendingRsvp?.guestId === guest.id && (
+                <div className="confirm-inline">
+                  <span>{`${guest.name}さんは席次表に配置されています。出欠を変更すると席も外れます。`}</span>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      dispatch({ type: 'setRsvp', guestId: guest.id, rsvp: pendingRsvp.rsvp });
+                      setPendingRsvp(null);
+                    }}
+                  >
+                    変更する
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setPendingRsvp(null)}>
+                    やめる
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))

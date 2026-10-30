@@ -21,7 +21,8 @@ function tableSuggestion(tables: TableDef[]): string {
 }
 
 export function SeatingEditor() {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, dispatchWithUndo } = useAppState();
+  const [confirmingTableId, setConfirmingTableId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [armedSeat, setArmedSeat] = useState<string | null>(null);
   const dragId = useRef<string | null>(null);
@@ -236,19 +237,41 @@ export function SeatingEditor() {
                     ))}
                   </select>
                 </label>
-                <button
-                  type="button"
-                  className="btn-danger-ghost"
-                  disabled={state.tables.length === 1}
-                  aria-label={`${table.name}を削除`}
-                  onClick={() => {
-                    if (window.confirm(`${table.name}を削除しますか？`)) {
-                      dispatch({ type: 'removeTable', tableId: table.id });
-                    }
-                  }}
-                >
-                  削除
-                </button>
+                {confirmingTableId === table.id ? (
+                  <>
+                    <span className="confirm-inline-text">{`${table.name}を削除しますか？`}</span>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => {
+                        dispatchWithUndo(
+                          { type: 'removeTable', tableId: table.id },
+                          `${table.name}を削除しました`,
+                        );
+                        setConfirmingTableId(null);
+                      }}
+                    >
+                      削除する
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => setConfirmingTableId(null)}
+                    >
+                      やめる
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-danger-ghost"
+                    disabled={state.tables.length === 1}
+                    aria-label={`${table.name}を削除`}
+                    onClick={() => setConfirmingTableId(table.id)}
+                  >
+                    削除
+                  </button>
+                )}
               </div>
 
               <div

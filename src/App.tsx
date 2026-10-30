@@ -10,6 +10,7 @@ import RsvpPage from './components/RsvpPage';
 import { CloudSync } from './store/cloudSync';
 import { AuthPanel } from './components/AuthPanel';
 import { TasksView } from './components/TasksView';
+import { UndoToast } from './components/UndoToast';
 import { createLargeSeedState } from './lib/seedLarge';
 
 type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'tasks' | 'print' | 'settings';
@@ -25,28 +26,51 @@ const tabs: { view: View; label: string }[] = [
 ];
 
 function Shell() {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, dispatchWithUndo, savedAt, cloudPhase } = useAppState();
   const [view, setView] = useState<View>('dashboard');
   const [focusPending, setFocusPending] = useState(0);
   const { info } = state;
 
+  const [confirmingReset, setConfirmingReset] = useState(false);
+
   function resetData() {
-    if (window.confirm('すべてのデータを初期状態に戻します。よろしいですか？')) {
-      dispatch({ type: 'reset' });
-    }
+    dispatchWithUndo({ type: 'reset' }, 'データを初期化しました');
+    setConfirmingReset(false);
   }
 
   const [confirmingLoad, setConfirmingLoad] = useState(false);
 
   function loadLargeSample() {
-    dispatch({ type: 'hydrate', state: createLargeSeedState() });
+    dispatchWithUndo(
+      { type: 'hydrate', state: createLargeSeedState() },
+      '120名の大規模サンプルを読み込みました',
+    );
     setConfirmingLoad(false);
   }
+
+  const timeText = savedAt
+    ? `${savedAt.getHours()}:${String(savedAt.getMinutes()).padStart(2, '0')}`
+    : '';
+  const saveText =
+    cloudPhase === 'syncing'
+      ? 'クラウドへ保存中…'
+      : cloudPhase === 'error'
+        ? 'クラウド保存に失敗（この端末には保存済み）'
+        : cloudPhase === 'synced'
+          ? `✓ クラウドに保存済み ${timeText}`
+          : savedAt
+            ? `✓ 保存済み ${timeText}`
+            : '';
 
   return (
     <>
       <header className="app-header">
         <span className="brand">席次まるっと</span>
+        {saveText && (
+          <span className="save-status" role="status">
+            {saveText}
+          </span>
+        )}
         <nav className="tabs" role="tablist" aria-label="メインメニュー">
           {tabs.map((tab) => (
             <button
@@ -181,11 +205,23 @@ function Shell() {
             <div className="danger-zone">
               <h3>データの初期化</h3>
               <p className="muted">
-                すべてのゲスト・席次・式の情報が最初のサンプルに戻ります。クラウド保存している場合はそちらも初期化されます。実行前に確認画面が出ます。
+                すべてのゲスト・席次・式の情報が最初のサンプルに戻ります。クラウド保存している場合はそちらも初期化されます。実行直後であれば「元に戻す」で取り消せます。
               </p>
-              <button type="button" className="btn-danger-ghost" onClick={resetData}>
-                データを初期状態に戻す
-              </button>
+              {confirmingReset ? (
+                <div className="sample-confirm">
+                  <span>本当に初期状態に戻しますか？</span>
+                  <button type="button" className="btn-danger" onClick={resetData}>
+                    初期状態に戻す
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={() => setConfirmingReset(false)}>
+                    やめる
+                  </button>
+                </div>
+              ) : (
+                <button type="button" className="btn-danger-ghost" onClick={() => setConfirmingReset(true)}>
+                  データを初期状態に戻す
+                </button>
+              )}
             </div>
           </section>
         )}
@@ -196,6 +232,7 @@ function Shell() {
           席次まるっと — ゲスト名簿・出欠・席次表をひとつに。
         </small>
       </footer>
+      <UndoToast />
     </>
   );
 }
