@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { proposeAssignmentsWithReasons } from '../lib/autoSeat';
+import { checkSeatingEtiquette } from '../lib/etiquette';
 import { useAppState } from '../store/appState';
 import {
   seatPosition,
@@ -187,6 +188,30 @@ export function SeatingEditor() {
       {summary.allSeated && (
         <div className="celebration">全員の席が決まりました。</div>
       )}
+
+      {(() => {
+        const notes = checkSeatingEtiquette(state);
+        const seatedCount = Object.keys(state.assignments).length;
+        if (seatedCount === 0) return null;
+        return (
+          <div className="card etiquette-panel">
+            <h3>作法チェック</h3>
+            {notes.length === 0 ? (
+              <p className="muted">作法の観点で気になる点はありませんでした。</p>
+            ) : (
+              <ul className="etiquette-list">
+                {notes.map((note) => (
+                  <li key={note.id} className={note.level === 'warn' ? 'eq-warn' : 'eq-check'}>
+                    <span className="eq-badge">{note.level === 'warn' ? '要確認' : '確認'}</span>
+                    <span>{note.text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="muted">上座・下座や親族の席など、日本の披露宴の作法から自動でチェックしています。</p>
+          </div>
+        );
+      })()}
 
       <section aria-labelledby="unassigned-guests-heading">
         <h2 id="unassigned-guests-heading">

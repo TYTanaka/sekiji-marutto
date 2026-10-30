@@ -93,6 +93,15 @@ export default function RsvpPage({ token }: RsvpPageProps) {
           setMemo(data.guest.memo ?? '');
         }
         setStatus('ready');
+
+        // 開封記録： ローカルモードでは状態に直接残す（クラウドモードでは
+        // get_invitation RPC がサーバー側で記録する）。最初の1回だけ。
+        if (!cloudEnabled && guest && !guest.openedAt) {
+          dispatch({
+            type: 'updateGuest',
+            guest: { ...guest, openedAt: new Date().toISOString() },
+          });
+        }
       } catch {
         if (!cancelled) setStatus('notFound');
       }

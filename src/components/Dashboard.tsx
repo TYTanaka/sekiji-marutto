@@ -1,8 +1,13 @@
 import { useState } from 'react';
-import { useAppState } from '../store/appState';
+import { useAppState, openedAtFor } from '../store/appState';
 import { summarize, nextActionHint } from '../lib/stats';
 import { tableFill } from '../lib/seating';
-import { buildReminderMessage, inviteUrlFor } from '../lib/reminder';
+import {
+  buildReminderMessage,
+  buildOpenedReminderMessage,
+  inviteUrlFor,
+} from '../lib/reminder';
+import type { Guest } from '../types';
 import heroUrl from '../assets/hero.jpg';
 
 function daysUntil(iso: string): number | null {
@@ -14,11 +19,29 @@ function daysUntil(iso: string): number | null {
 }
 
 export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
-  const { state, changes, clearChanges } = useAppState();
+  const { state, changes, clearChanges, opens } = useAppState();
   const sum = summarize(state);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const pendingGuests = state.guests.filter((g) => g.rsvp === 'pending');
+  const openedPending = pendingGuests.filter((g) => openedAtFor(opens, g));
+  const unopenedPending = pendingGuests.filter((g) => !openedAtFor(opens, g));
   const days = daysUntil(state.info.date);
+
+  function reminderRow(guest: Guest, text: string) {
+    return (
+      <div key={guest.id} className="guest-row">
+        <span>{guest.name} 様</span>
+        <span className="row-actions">
+          <button type="button" className="btn btn-ghost" onClick={() => void copyReminder(guest.id, text)}>
+            {copiedId === guest.id ? 'コピーしました' : '催促文をコピー'}
+          </button>
+          <a className="btn line-btn" href={`https://line.me/R/msg/text/?${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">
+            LINEで送る
+          </a>
+        </span>
+      </div>
+    );
+  }
 
   async function copyReminder(guestId: string, text: string) {
     try {
@@ -139,23 +162,21 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
         <div className="card">
           <h2>未回答のゲストへの催促サポート</h2>
           <p className="muted">そのまま送れる丁寧な文面を用意しました。コピーして普段の連絡手段で送るか、LINEで直接送れます。</p>
-          {pendingGuests.map((guest) => {
-            const url = inviteUrlFor(guest.inviteToken);
-            const text = buildReminderMessage(guest, state.info, url);
-            return (
-              <div key={guest.id} className="guest-row">
-                <span>{guest.name} 様</span>
-                <span className="row-actions">
-                  <button type="button" className="btn btn-ghost" onClick={() => void copyReminder(guest.id, text)}>
-                    {copiedId === guest.id ? 'コピーしました' : '催促文をコピー'}
-                  </button>
-                  <a className="btn line-btn" href={`https://line.me/R/msg/text/?${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">
-                    LINEで送る
-                  </a>
-                </span>
-              </div>
-            );
-          })}
+          {openedPending.length > 0 && (
+            <>
+              <h3 className="pending-subhead">リンクを開いたのに未回答（回答まであと一歩）</h3>
+              <p className="muted">案内は見てもらえています。見た前提の短い文面で、そっと後押しします。</p>
+              {openedPending.map((guest) =>
+                reminderRow(guest, buildOpenedReminderMessage(guest, state.info, inviteUrlFor(guest.inviteToken))),
+              )}
+              {unopenedPending.length > 0 && (
+                <h3 className="pending-subhead">まだリンクを開いていないゲスト</h3>
+              )}
+            </>
+          )}
+          {unopenedPending.map((guest) =>
+            reminderRow(guest, buildReminderMessage(guest, state.info, inviteUrlFor(guest.inviteToken))),
+          )}
         </div>
       )}
     </section>

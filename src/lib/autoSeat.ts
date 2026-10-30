@@ -6,7 +6,7 @@ export interface ProposalWithReasons {
   reasons: Record<string, string[]>;
 }
 
-const VIP_PATTERN = /部長|社長|専務|課長|先生|主賓|上司/;
+export const VIP_PATTERN = /部長|社長|専務|課長|先生|主賓|上司/;
 
 /** 小さいほど上座（seatIndex 0）に近い席を割り当てる */
 function seatPriority(guest: Guest): number {

@@ -44,7 +44,33 @@ create policy weddings_owner_delete
 revoke all on public.weddings from anon;
 grant select, insert, update, delete on public.weddings to authenticated;
 
--- 招待トークンに対応する公開情報だけを返す
+-- 招待リンクの開封記録（最初の1回だけを保持）
+create table if not exists public.invitation_opens (
+    wedding_id uuid not null references public.weddings(id) on delete cascade,
+    token text not null,
+    guest_id text,
+    opened_at timestamptz not null default now(),
+    primary key (wedding_id, token)
+);
+
+alter table public.invitation_opens enable row level security;
+
+drop policy if exists invitation_opens_owner_select on public.invitation_opens;
+create policy invitation_opens_owner_select
+    on public.invitation_opens
+    for select
+    to authenticated
+    using (
+        exists (
+            select 1 from public.weddings as w
+            where w.id = wedding_id and w.owner_id = auth.uid()
+        )
+    );
+
+revoke all on public.invitation_opens from anon, authenticated;
+grant select on public.invitation_opens to authenticated;
+
+-- 招待トークンに対応する公開情報だけを返す（開封も記録する）
 create or replace function public.get_invitation(p_token text)
 returns jsonb
 language plpgsql
@@ -52,11 +78,12 @@ security definer
 set search_path = public
 as $$
 declare
+    v_wedding_id uuid;
     v_state jsonb;
     v_guest jsonb;
 begin
-    select w.state, g.guest
-    into v_state, v_guest
+    select w.id, w.state, g.guest
+    into v_wedding_id, v_state, v_guest
     from public.weddings as w
     cross join lateral jsonb_array_elements(w.state -> 'guests') as g(guest)
     where g.guest ->> 'inviteToken' = p_token
@@ -65,6 +92,10 @@ begin
     if not found then
         return null;
     end if;
+
+    insert into public.invitation_opens (wedding_id, token, guest_id)
+    values (v_wedding_id, p_token, v_guest ->> 'id')
+    on conflict (wedding_id, token) do nothing;
 
     return jsonb_build_object(
         'info', v_state -> 'info',
@@ -176,6 +207,15 @@ grant execute on function public.submit_rsvp(text, text, integer, text, text)
 do $$
 begin
     alter publication supabase_realtime add table public.weddings;
+exception
+    when duplicate_object then
+        null;
+end;
+$$;
+
+do $$
+begin
+    alter publication supabase_realtime add table public.invitation_opens;
 exception
     when duplicate_object then
         null;

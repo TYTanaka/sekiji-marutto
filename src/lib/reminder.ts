@@ -30,6 +30,22 @@ export function buildInviteMessage(guest: Guest, info: WeddingInfo, url: string)
   ].join('\n');
 }
 
+/** 開封済み・未回答のゲスト向け： 案内を見た前提の、短く柔らかい催促文 */
+export function buildOpenedReminderMessage(guest: Guest, info: WeddingInfo, url: string): string {
+  const deadline = replyDeadline(info);
+  const deadlineText = deadline ? `恐れ入りますが、${formatJapaneseDate(deadline)}までにご回答いただけますと幸いです。` : 'お早めにご回答いただけますと幸いです。';
+  return [
+    `${guest.name}様`,
+    '',
+    `先日ご案内した結婚式（${info.date.replaceAll('-', '/')}・${info.venue}）のご案内をご覧いただきありがとうございます。`,
+    '出欠のご回答がまだのようでしたので、改めてご連絡しました。',
+    deadlineText,
+    'こちらからご回答いただけます。',
+    url,
+    `${info.groomName}＆${info.brideName}`,
+  ].join('\n');
+}
+
 export function buildReminderMessage(guest: Guest, info: WeddingInfo, url: string): string {
   const deadline = replyDeadline(info);
   const deadlineText = deadline ? `恐れ入りますが、${formatJapaneseDate(deadline)}までにご回答いただけますと幸いです。` : 'お早めにご回答いただけますと幸いです。';

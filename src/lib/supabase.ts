@@ -62,6 +62,33 @@ export async function submitRsvpCloud(
   return !error && data === true
 }
 
+/**
+ * 自分の式の招待リンク開封記録（token → ISO日時）を取得する。
+ * マイグレーション未適用などでテーブルが無い場合は空を返し、機能ごと無効化される。
+ */
+export async function fetchOpens(
+  weddingId: string,
+): Promise<Record<string, string>> {
+  if (!supabase) return {}
+
+  try {
+    const { data, error } = await supabase
+      .from('invitation_opens')
+      .select('token,opened_at')
+      .eq('wedding_id', weddingId)
+
+    if (error || !data) return {}
+
+    const opens: Record<string, string> = {}
+    for (const row of data as { token: string; opened_at: string }[]) {
+      opens[row.token] = row.opened_at
+    }
+    return opens
+  } catch {
+    return {}
+  }
+}
+
 export function newInviteToken(): string {
   const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789'
   let token = 'inv-'

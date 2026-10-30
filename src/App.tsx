@@ -13,10 +13,11 @@ import RsvpPage from './components/RsvpPage';
 import { CloudSync } from './store/cloudSync';
 import { AuthPanel } from './components/AuthPanel';
 import { TasksView } from './components/TasksView';
+import { CheckinView } from './components/CheckinView';
 import { UndoToast } from './components/UndoToast';
 import { createLargeSeedState } from './lib/seedLarge';
 
-type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'tasks' | 'print' | 'settings';
+type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'tasks' | 'print' | 'checkin' | 'settings';
 
 const tabs: { view: View; label: string }[] = [
   { view: 'dashboard', label: '概要' },
@@ -25,6 +26,7 @@ const tabs: { view: View; label: string }[] = [
   { view: 'invitation', label: '招待状' },
   { view: 'tasks', label: '準備' },
   { view: 'print', label: '印刷' },
+  { view: 'checkin', label: '当日受付' },
   { view: 'settings', label: '設定' },
 ];
 
@@ -167,6 +169,7 @@ function Shell() {
           {view === 'invitation' && (<><Invitation /><InviteLinks /></>)}
           {view === 'tasks' && <TasksView />}
           {view === 'print' && <PrintView />}
+          {view === 'checkin' && <CheckinView />}
         </div>
 
         {view === 'settings' && (

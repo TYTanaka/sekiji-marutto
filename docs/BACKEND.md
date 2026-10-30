@@ -44,7 +44,13 @@
 - 招待ページ（`#/rsvp/<token>`）は管理画面とは独立した公開ページとして描画する。
   クラウドモードでは RPC、ローカルモードでは同一端末の状態に対して動作する。
 
+## 開封トラッキング（2026-10-31 追加）
+- `invitation_opens` テーブル（wedding_id, token, guest_id, opened_at／PK は wedding_id+token で最初の開封のみ保持）。
+- `get_invitation` が招待を返すついでに開封を INSERT する（SECURITY DEFINER のため anon でも書き込めるが、直接のテーブル書き込み権限は誰にも与えない）。
+- 読み取りは所有者のみ（RLS: 自分の weddings 行に紐づくものだけ select 可）。主催者クライアントはログイン後に取得し、Realtime（INSERT）で随時更新する。
+- 既存プロジェクトへの適用は `supabase/migration_20261031_open_tracking.sql` を SQL Editor で1回実行する。未適用でもアプリは壊れない（開封情報が空になるだけ）。
+
 ## 移行・運用
-- SQL は `supabase/schema.sql` としてリポジトリ管理し、プロジェクト作成後にそのまま実行する。
+- SQL は `supabase/schema.sql` としてリポジトリ管理し、プロジェクト作成後にそのまま実行する。追加変更は `supabase/migration_*.sql` に切り出す。
 - フロントのデプロイは従来どおり GitHub Pages。APIキーは anon key（公開前提のキー）を使い、
   保護はRLSとRPCの限定公開で担保する（service role key は絶対にフロントへ置かない）。

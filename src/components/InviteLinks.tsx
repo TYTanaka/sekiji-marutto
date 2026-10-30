@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { useAppState } from '../store/appState';
+import { useAppState, openedAtFor } from '../store/appState';
 import {
   inviteUrlFor,
   buildInviteMessage,
@@ -8,8 +8,15 @@ import {
 } from '../lib/reminder';
 import { RSVP_LABELS } from '../types';
 
+function formatOpenedAt(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function InviteLinks() {
-  const { state } = useAppState();
+  const { state, opens } = useAppState();
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [openQrId, setOpenQrId] = useState<string | null>(null);
   const inputRefs = useRef(new Map<string, HTMLInputElement>());
@@ -56,6 +63,7 @@ export function InviteLinks() {
         const url = inviteUrlFor(guest.inviteToken);
         const text = buildInviteMessage(guest, state.info, url);
         const isQrOpen = openQrId === id;
+        const openedAt = openedAtFor(opens, guest);
 
         return (
           <div className="guest-row invite-row" key={guest.id}>
@@ -63,7 +71,12 @@ export function InviteLinks() {
               <strong>{guest.name}</strong>{' '}
               <span className={`badge ${guest.rsvp}`}>
                 {RSVP_LABELS[guest.rsvp]}
-              </span>
+              </span>{' '}
+              {guest.rsvp === 'pending' && (
+                <span className={`open-chip${openedAt ? ' opened' : ''}`}>
+                  {openedAt ? `開封済み ${formatOpenedAt(openedAt)}` : '未開封'}
+                </span>
+              )}
             </div>
 
             <input

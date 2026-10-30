@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase, cloudEnabled } from '../lib/supabase';
+import { supabase, cloudEnabled, fetchOpens } from '../lib/supabase';
 import { useAppState } from './appState';
 import type { AppState } from '../types';
 
@@ -10,7 +10,7 @@ type WeddingRow = {
 };
 
 export function CloudSync() {
-  const { state, dispatch, reportCloud } = useAppState();
+  const { state, dispatch, reportCloud, reportOpens } = useAppState();
   const stateRef = useRef(state);
   const rowIdRef = useRef<string | null>(null);
   const lastWrittenRef = useRef<string>('');
@@ -33,6 +33,7 @@ export function CloudSync() {
       lastWrittenRef.current = '';
       setRowId(null);
       reportCloud('idle');
+      reportOpens({});
       if (saveTimerRef.current !== null) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
@@ -66,6 +67,9 @@ export function CloudSync() {
         dispatch({ type: 'hydrate', state: row.state as AppState });
         setRowId(row.id);
         reportCloud('synced');
+        void fetchOpens(row.id).then((result) => {
+          if (!disposed && request === generation) reportOpens(result);
+        });
         return;
       }
 
@@ -112,7 +116,7 @@ export function CloudSync() {
         saveTimerRef.current = null;
       }
     };
-  }, [dispatch, reportCloud]);
+  }, [dispatch, reportCloud, reportOpens]);
 
   useEffect(() => {
     if (!cloudEnabled || !supabase || !rowId) return;
@@ -144,11 +148,31 @@ export function CloudSync() {
       )
       .subscribe();
 
+    const opensChannel = client
+      .channel('opens-' + rowId)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'invitation_opens',
+          filter: `wedding_id=eq.${rowId}`,
+        },
+        () => {
+          if (disposed || rowIdRef.current !== rowId) return;
+          void fetchOpens(rowId).then((result) => {
+            if (!disposed) reportOpens(result);
+          });
+        },
+      )
+      .subscribe();
+
     return () => {
       disposed = true;
       void client.removeChannel(channel);
+      void client.removeChannel(opensChannel);
     };
-  }, [rowId, dispatch]);
+  }, [rowId, dispatch, reportOpens]);
 
   useEffect(() => {
     if (!cloudEnabled || !supabase || !rowIdRef.current) return;

@@ -15,6 +15,8 @@ export interface Guest {
   memo: string;
   companions: number;
   inviteToken: string;
+  /** 招待リンクを最初に開いた日時（ISO）。ローカルモードで記録される */
+  openedAt?: string;
 }
 
 export interface TableDef {

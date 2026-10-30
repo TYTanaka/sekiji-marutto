@@ -254,6 +254,17 @@ interface AppStateContextValue {
   reportCloud: (phase: CloudPhase) => void;
   changes: ChangeEvent[];
   clearChanges: () => void;
+  /** クラウド側の開封記録（token → ISO日時）。ローカル分は Guest.openedAt を見る */
+  opens: Record<string, string>;
+  reportOpens: (opens: Record<string, string>) => void;
+}
+
+/** ゲストの招待リンク開封日時。クラウド記録を優先し、無ければローカル記録を見る */
+export function openedAtFor(
+  opens: Record<string, string>,
+  guest: Guest,
+): string | undefined {
+  return opens[guest.inviteToken] ?? guest.openedAt;
 }
 
 const AppStateContext = createContext<AppStateContextValue | undefined>(
@@ -361,6 +372,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setCloudPhase(phase);
   }, []);
 
+  const [opens, setOpens] = useState<Record<string, string>>({});
+  const reportOpens = useCallback((next: Record<string, string>) => {
+    setOpens(next);
+  }, []);
+
   useEffect(
     () => () => {
       if (undoTimerRef.current !== null) {
@@ -384,6 +400,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         reportCloud,
         changes,
         clearChanges,
+        opens,
+        reportOpens,
       }}
     >
       {children}
