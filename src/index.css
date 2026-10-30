@@ -809,3 +809,22 @@ button:not([class]) {
 button:not([class]):hover { background: var(--rose-soft); }
 .settings-card label { display: grid; gap: 6px; font-size: .875rem; font-weight: 700; }
 .danger-zone { padding: 18px; border-radius: var(--r-md); margin-top: 22px; }
+
+/* バリエーション単体でも完全なボタンになるよう基礎プロパティを持たせる */
+.btn-primary, .btn-ghost, .btn-danger-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 20px;
+  border-width: 1.5px;
+  border-style: solid;
+  border-radius: 999px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+  transition: all 170ms ease;
+}
+.btn-primary { border-color: transparent; }
