@@ -46,6 +46,8 @@ export function PrintView() {
                     (_, k) => assignedGuestAt(state, table.id, index + 1 + k),
                   ).some(Boolean);
                   if (laterOccupied) return null;
+                  // 末尾の空席の並びは、先頭の1席だけに集約行を出す（残りは出さない）
+                  if (!assignedGuestAt(state, table.id, index - 1)) return null;
                   const emptyCount = table.seats - index;
                   return (
                     <li key={index} className="muted print-seat-row">
@@ -75,14 +77,13 @@ export function PrintView() {
                       </>
                     )}
                     {occupant ? (
-                      <>
-                        {`${occupant.name} 様（${occupant.title}）`}
-                        {' '}
-                        <span>{SIDE_LABELS[occupant.side]}</span>
-                        {occupant.allergy && (
-                          <span> / アレルギー：{occupant.allergy}</span>
-                        )}
-                      </>
+                      <span className="print-seat-main">
+                        <span>{`${occupant.name} 様（${occupant.title}）`}</span>
+                        <span className="print-seat-sub">
+                          {SIDE_LABELS[occupant.side]}
+                          {occupant.allergy && ` ／ アレルギー：${occupant.allergy}`}
+                        </span>
+                      </span>
                     ) : (
                       <span className="muted">（空席）</span>
                     )}

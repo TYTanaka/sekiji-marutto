@@ -1047,3 +1047,5 @@ button:not([class]):hover { background: var(--rose-soft); }
   .print-seat-row { padding: 1.6mm 0; }
 }
 .sample-confirm { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 600; }
+.print-seat-main { display: inline-flex; flex-direction: column; gap: 1px; }
+.print-seat-sub { font-size: .84em; color: var(--muted); letter-spacing: .03em; }
