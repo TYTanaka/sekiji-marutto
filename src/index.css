@@ -1033,18 +1033,22 @@ button:not([class]):hover { background: var(--rose-soft); }
 
 @page { size: A4; margin: 13mm; }
 @media print {
-  .print-area { font-size: 10.5pt; }
+  .print-area { font-size: 11pt; }
   .print-head { margin-bottom: 7mm; }
   .print-title { font-size: 20pt; }
-  .print-tables { grid-template-columns: 1fr 1fr; gap: 7mm; margin-top: 0; }
+  .print-tables { display: block; margin-top: 0; }
+  .print-table { margin-bottom: 6mm; }
   .print-table {
-    padding: 5mm;
+    padding: 4mm 6mm;
     border: 1px solid #D9C9AC;
     border-radius: 6px;
     box-shadow: none;
   }
-  .print-table h2 { font-size: 12pt; margin-bottom: 3mm; }
-  .print-seat-row { padding: 1.6mm 0; }
+  .print-table h2 { font-size: 13.5pt; margin-bottom: 3mm; }
+  .print-seat-row { padding: 1mm 0; line-height: 1.5; font-size: 11pt; }
+  .print-seat-no { font-size: 10pt; }
+  .print-seat-main { font-weight: 600; }
+  .print-seat-sub { color: #57504A; font-size: 9.5pt; font-weight: 400; }
 }
 .sample-confirm { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 600; }
 .print-seat-main { display: inline-flex; flex-direction: column; gap: 1px; }
