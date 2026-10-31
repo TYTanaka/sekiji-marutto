@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAppState } from '../store/appState';
 import {
-  assignedGuestAt,
+  seatOccupant,
   tableFill,
   unassignedAttending,
 } from '../lib/seating';
@@ -12,6 +12,7 @@ import {
   type SubmissionSnapshot,
 } from '../lib/submission';
 import { buildGuestsCsv, buildSeatingCsv, downloadCsv } from '../lib/csv';
+import { summarize } from '../lib/stats';
 
 const SUBMISSION_KEY = 'sekiji-submission-v1';
 
@@ -46,6 +47,7 @@ function formatDateTime(iso: string): string {
 export function PrintView() {
   const { state } = useAppState();
   const { groomName, brideName, date, venue } = state.info;
+  const sum = summarize(state);
   const unassigned = unassignedAttending(state);
   const [mode, setMode] = useState<'chart' | 'pack'>('chart');
   const [snapshot, setSnapshot] = useState<SubmissionSnapshot | null>(loadSnapshot);
@@ -72,6 +74,11 @@ export function PrintView() {
         <p className="print-meta">
           {groomName} ・ {brideName}　／　{date.replaceAll('-', '/')}　／　{venue}
         </p>
+        {sum.attending > 0 && (
+          <p className="print-meta">
+            {`出席予定 ${sum.attendingHeads} 名（ゲスト ${sum.attending} 名 ＋ 同伴者 ${sum.companions} 名）`}
+          </p>
+        )}
       </header>
       <div className="no-print pack-controls">
         <div className="segmented" role="group" aria-label="印刷の種類">
@@ -158,15 +165,16 @@ export function PrintView() {
             </h2>
             <ol className="print-seats">
               {Array.from({ length: table.seats }, (_, index) => {
-                const occupant = assignedGuestAt(state, table.id, index);
+                const occ = seatOccupant(state, table.id, index);
+                const occupant = occ?.guest;
                 if (!occupant && index !== 0) {
                   const laterOccupied = Array.from(
                     { length: table.seats - index - 1 },
-                    (_, k) => assignedGuestAt(state, table.id, index + 1 + k),
+                    (_, k) => seatOccupant(state, table.id, index + 1 + k),
                   ).some(Boolean);
                   if (laterOccupied) return null;
                   // 末尾の空席の並びは、先頭の1席だけに集約行を出す（残りは出さない）
-                  if (!assignedGuestAt(state, table.id, index - 1)) return null;
+                  if (!seatOccupant(state, table.id, index - 1)) return null;
                   const emptyCount = table.seats - index;
                   return (
                     <li key={index} className="muted print-seat-row">
@@ -176,7 +184,7 @@ export function PrintView() {
                 }
                 if (!occupant && index === 0) {
                   const anyOccupied = Array.from({ length: table.seats }, (_, k) =>
-                    assignedGuestAt(state, table.id, k),
+                    seatOccupant(state, table.id, k),
                   ).some(Boolean);
                   if (!anyOccupied) {
                     return (
@@ -195,7 +203,11 @@ export function PrintView() {
                         <span className="badge-kamiza">上座</span>{' '}
                       </>
                     )}
-                    {occupant ? (
+                    {occ?.companion ? (
+                      <span className="print-seat-main">
+                        <span>{`同伴者（${occupant!.name} 様）`}</span>
+                      </span>
+                    ) : occupant ? (
                       <span className="print-seat-main">
                         <span>{`${occupant.name} 様（${occupant.title}）`}</span>
                         <span className="print-seat-sub">

@@ -275,7 +275,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
                 <option key={count} value={count}>{count}名</option>
               ))}
             </select>
-            <p className="field-help" id="companions-help">出席の場合のみ有効</p>
+            <p className="field-help" id="companions-help">ご家族など、あなたと一緒に参加される方の人数です（出席の場合のみ有効）</p>
           </div>
 
           <div className="field">

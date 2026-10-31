@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { seatPosition, unassignedAttending, validateAssignment, tableFill } from './seating'
+import { seatPosition, unassignedAttending, validateAssignment, tableFill, seatOccupant } from './seating'
 import { summarize, nextActionHint } from './stats'
 import { createSeedState } from './seed'
 
@@ -54,5 +54,51 @@ describe('validateAssignment', () => {
   })
   it('tableFill reports table A as 4 of 8', () => {
     expect(tableFill(s, 'table-a')).toEqual({ seated: 4, seats: 8 })
+  })
+  it('summarize counts companions in attending heads', () => {
+    const sum = summarize(s)
+    expect(sum.companions).toBe(1)
+    expect(sum.attendingHeads).toBe(9)
+  })
+})
+
+describe('companions seating', () => {
+  const s = createSeedState()
+  const withParty = {
+    ...s,
+    guests: s.guests.map((g) => (g.id === 'g7' ? { ...g, companions: 2 } : g)),
+  }
+  it('accepts a seat where the whole party fits', () => {
+    expect(validateAssignment(withParty, 'g7', 'table-b', 5).ok).toBe(true)
+  })
+  it('rejects a seat where companions would overflow the table', () => {
+    expect(validateAssignment(withParty, 'g7', 'table-b', 6).ok).toBe(false)
+  })
+  it('rejects a seat inside another party’s companion range', () => {
+    const seated = {
+      ...withParty,
+      assignments: { ...withParty.assignments, g7: { tableId: 'table-b', seatIndex: 2 } },
+    }
+    const other = unassignedAttending(seated).find((g) => g.id !== 'g7')!
+    expect(validateAssignment(seated, other.id, 'table-b', 3).ok).toBe(false)
+  })
+  it('tableFill counts companions as seated people', () => {
+    const seated = {
+      ...s,
+      assignments: { ...s.assignments, g7: { tableId: 'table-b', seatIndex: 0 } },
+    }
+    expect(tableFill(seated, 'table-b')).toEqual({ seated: 2, seats: 8 })
+  })
+  it('seatOccupant marks companion seats', () => {
+    const seated = {
+      ...s,
+      assignments: { ...s.assignments, g7: { tableId: 'table-b', seatIndex: 0 } },
+    }
+    expect(seatOccupant(seated, 'table-b', 0)).toMatchObject({ companion: false })
+    expect(seatOccupant(seated, 'table-b', 1)).toMatchObject({
+      companion: true,
+      guest: { id: 'g7' },
+    })
+    expect(seatOccupant(seated, 'table-b', 2)).toBeUndefined()
   })
 })

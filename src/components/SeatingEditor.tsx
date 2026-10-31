@@ -5,6 +5,7 @@ import { useAppState } from '../store/appState';
 import {
   seatPosition,
   assignedGuestAt,
+  seatOccupant,
   unassignedAttending,
   tableFill,
 } from '../lib/seating';
@@ -25,6 +26,7 @@ export function SeatingEditor() {
   const { state, dispatch, dispatchWithUndo } = useAppState();
   const [confirmingTableId, setConfirmingTableId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedGuest = state.guests.find((g) => g.id === selectedId) ?? null;
   const [armedSeat, setArmedSeat] = useState<string | null>(null);
   const dragId = useRef<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -193,6 +195,9 @@ export function SeatingEditor() {
         <h2 id="unassigned-guests-heading">
           未配置のゲスト（出席） <span>{unassigned.length}名</span>
         </h2>
+        <p className="hint">
+          置き方：名前のチップをタップ → 座らせたい空席をタップ（ドラッグでも移動できます）。同伴者は本人の隣の席に座るものとして、人数に含めて数えています。
+        </p>
         <div className="chips-row">
           {unassigned.map((guest: Guest) => (
             <button
@@ -221,13 +226,20 @@ export function SeatingEditor() {
             >
               <span>{guest.name}</span>
               <small>{guest.title}</small>
+              {guest.companions > 0 && <small>{`同伴${guest.companions}名`}</small>}
             </button>
           ))}
         </div>
         <p className="muted">
-          チップを選んでから空席をタップすると配置できます。ドラッグでも移動できます。配置した席を外すときは、席をタップして確認表示を出してから、もう一度タップしてください。
+          配置した席を外すときは、席をタップして確認表示を出してから、もう一度タップしてください。
         </p>
       </section>
+
+      {selectedGuest && (
+        <p className="arm-hint">
+          {`${selectedGuest.name}さんを選択中：座らせたい席をタップしてください（やめる場合はもう一度チップをタップ）`}
+        </p>
+      )}
 
       {armedSeat && (
         <p className="arm-hint">席を外すには、もう一度同じ席をタップしてください。</p>
@@ -323,7 +335,8 @@ export function SeatingEditor() {
                 <div className="table-name">{table.name}</div>
                 {Array.from({ length: table.seats }, (_, i) => {
                   const pos = seatPosition(i, table.seats);
-                  const occupant = assignedGuestAt(state, table.id, i);
+                  const occ = seatOccupant(state, table.id, i);
+                  const occupant = occ?.guest;
 
                   return (
                     <button
@@ -331,6 +344,7 @@ export function SeatingEditor() {
                       type="button"
                       className={
                         'seat ' + (occupant ? 'filled' : 'empty') +
+                        (occ?.companion ? ' companion' : '') +
                         (selectedId && !occupant ? ' target' : '') +
                         (armedSeat === `${table.id}:${i}` ? ' armed' : '')
                       }
@@ -343,9 +357,11 @@ export function SeatingEditor() {
                       }}
                       aria-label={
                         `${table.name}の${i === 0 ? '上座' : `${i + 1}番席`}` +
-                        (occupant
-                          ? `、${occupant.name}さん。タップで配置を解除`
-                          : '、空席。選択したゲストを配置')
+                        (occ?.companion
+                          ? `、${occupant!.name}さんの同伴者。タップで配置を解除`
+                          : occupant
+                            ? `、${occupant.name}さん。タップで配置を解除`
+                            : '、空席。選択したゲストを配置')
                       }
                       onPointerDown={(event) => {
                         if (!occupant || !event.isPrimary || event.button !== 0) return;
@@ -374,7 +390,15 @@ export function SeatingEditor() {
                         }
                       }}
                     >
-                      {occupant ? (
+                      {occ?.companion ? (
+                        <>
+                          <span className="seat-no">{i + 1}</span>
+                          <span className="seat-name-line">同伴者</span>
+                          {armedSeat === `${table.id}:${i}` && (
+                            <span className="badge-kamiza" style={{ background: '#C0392B', color: '#fff' }}>外す？</span>
+                          )}
+                        </>
+                      ) : occupant ? (
                         <>
                           <span className="seat-no">{i + 1}</span>
                           {occupant.name.split(' ').map((part, k) => (

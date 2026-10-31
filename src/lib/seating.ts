@@ -22,18 +22,41 @@ export function seatPosition(
   };
 }
 
+/** 本人＋同伴者の人数（同伴者は本人の隣の席に座る前提で数える） */
+export function partySize(guest: Guest): number {
+  return 1 + Math.max(0, guest.companions ?? 0);
+}
+
+export interface SeatOccupant {
+  guest: Guest;
+  /** 本人の席ではなく、同伴者用の席かどうか */
+  companion: boolean;
+}
+
+/** 指定席を占有しているゲスト（同伴者席は本人を返す） */
+export function seatOccupant(
+  state: AppState,
+  tableId: string,
+  seatIndex: number,
+): SeatOccupant | undefined {
+  for (const guest of state.guests) {
+    const assignment = guestAssignment(state.assignments, guest.id);
+    if (assignment?.tableId !== tableId) continue;
+    const offset = seatIndex - assignment.seatIndex;
+    if (offset === 0) return { guest, companion: false };
+    if (offset > 0 && offset < partySize(guest)) {
+      return { guest, companion: true };
+    }
+  }
+  return undefined;
+}
+
 export function assignedGuestAt(
   state: AppState,
   tableId: string,
   seatIndex: number,
 ): Guest | undefined {
-  return state.guests.find((guest) => {
-    const assignment = guestAssignment(state.assignments, guest.id);
-    return (
-      assignment?.tableId === tableId &&
-      assignment.seatIndex === seatIndex
-    );
-  });
+  return seatOccupant(state, tableId, seatIndex)?.guest;
 }
 
 export function isSeatTaken(
@@ -41,11 +64,7 @@ export function isSeatTaken(
   tableId: string,
   seatIndex: number,
 ): boolean {
-  return Object.values(state.assignments).some(
-    (assignment) =>
-      assignment?.tableId === tableId &&
-      assignment.seatIndex === seatIndex,
-  );
+  return seatOccupant(state, tableId, seatIndex) !== undefined;
 }
 
 export function unassignedAttending(state: AppState): Guest[] {
@@ -86,15 +105,20 @@ export function validateAssignment(
     return { ok: false, reason: 'Seat index is out of range.' };
   }
 
-  const takenByAnotherGuest = Object.entries(state.assignments).some(
-    ([assignedGuestId, assignment]) =>
-      assignedGuestId !== guestId &&
-      assignment?.tableId === tableId &&
-      assignment.seatIndex === seatIndex,
-  );
+  const size = partySize(guest);
 
-  if (takenByAnotherGuest) {
-    return { ok: false, reason: 'Seat is taken by another guest.' };
+  if (seatIndex + size - 1 >= table.seats) {
+    return {
+      ok: false,
+      reason: 'Companion seats do not fit at this seat position.',
+    };
+  }
+
+  for (let offset = 0; offset < size; offset += 1) {
+    const occupant = seatOccupant(state, tableId, seatIndex + offset);
+    if (occupant && occupant.guest.id !== guestId) {
+      return { ok: false, reason: 'Seat is taken by another guest.' };
+    }
   }
 
   return { ok: true };
@@ -110,18 +134,13 @@ export function tableFill(
     return { seated: 0, seats: 0 };
   }
 
-  const occupiedSeats = new Set<number>();
-
-  for (const assignment of Object.values(state.assignments)) {
-    if (
-      assignment?.tableId === tableId &&
-      Number.isInteger(assignment.seatIndex) &&
-      assignment.seatIndex >= 0 &&
-      assignment.seatIndex < table.seats
-    ) {
-      occupiedSeats.add(assignment.seatIndex);
+  let seated = 0;
+  for (const guest of state.guests) {
+    const assignment = guestAssignment(state.assignments, guest.id);
+    if (assignment?.tableId === tableId) {
+      seated += partySize(guest);
     }
   }
 
-  return { seated: occupiedSeats.size, seats: table.seats };
+  return { seated, seats: table.seats };
 }

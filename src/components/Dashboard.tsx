@@ -69,12 +69,26 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
     }
   });
   const [setupForm, setSetupForm] = useState({
-    groomName: state.info.groomName,
-    brideName: state.info.brideName,
-    date: state.info.date,
-    venue: state.info.venue,
+    groomName: '',
+    brideName: '',
+    date: '',
+    venue: '',
   });
+  const setupReady =
+    setupForm.groomName.trim() !== '' &&
+    setupForm.brideName.trim() !== '' &&
+    setupForm.date !== '';
   const showSetup = isSampleInfo && !setupDone;
+
+  function setupInfo() {
+    return {
+      ...state.info,
+      groomName: setupForm.groomName.trim(),
+      brideName: setupForm.brideName.trim(),
+      date: setupForm.date,
+      venue: setupForm.venue.trim() || state.info.venue,
+    };
+  }
 
   function markSetupDone() {
     setSetupDone(true);
@@ -88,7 +102,7 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
   function startWithInfo() {
     dispatch({
       type: 'setInfo',
-      info: { ...state.info, ...setupForm },
+      info: setupInfo(),
     });
     markSetupDone();
   }
@@ -99,7 +113,7 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
         type: 'hydrate',
         state: {
           ...state,
-          info: { ...state.info, ...setupForm },
+          info: setupInfo(),
           guests: [],
           assignments: {},
           tasks: createDefaultTasks(setupForm.date || state.info.date),
@@ -124,6 +138,7 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
               <input
                 id="setup-groom"
                 className="input"
+                placeholder="例：佐藤 健太"
                 value={setupForm.groomName}
                 onChange={(e) => setSetupForm({ ...setupForm, groomName: e.target.value })}
               />
@@ -133,6 +148,7 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
               <input
                 id="setup-bride"
                 className="input"
+                placeholder="例：鈴木 美咲"
                 value={setupForm.brideName}
                 onChange={(e) => setSetupForm({ ...setupForm, brideName: e.target.value })}
               />
@@ -152,16 +168,17 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
               <input
                 id="setup-venue"
                 className="input"
+                placeholder="例：青山ウェディングホール"
                 value={setupForm.venue}
                 onChange={(e) => setSetupForm({ ...setupForm, venue: e.target.value })}
               />
             </div>
           </div>
           <div className="setup-actions">
-            <button type="button" className="btn btn-primary" onClick={startWithInfo}>
+            <button type="button" className="btn btn-primary" onClick={startWithInfo} disabled={!setupReady}>
               この内容で始める（ゲストはサンプルのまま）
             </button>
-            <button type="button" className="btn btn-ghost" onClick={startFresh}>
+            <button type="button" className="btn btn-ghost" onClick={startFresh} disabled={!setupReady}>
               ゲストを空にして始める
             </button>
             <button type="button" className="btn-ghost" onClick={markSetupDone}>
@@ -203,6 +220,9 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
         <div className="stat-card">
           <div className="stat-num">{sum.attending} 名</div>
           <div className="stat-label">出席</div>
+          {sum.companions > 0 && (
+            <div className="stat-sub">{`同伴者を含む延べ ${sum.attendingHeads} 名`}</div>
+          )}
         </div>
 
         <div className="stat-card">

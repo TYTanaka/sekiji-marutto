@@ -39,7 +39,9 @@ function createDraft(guest: Guest | null = null): GuestDraft {
     name: '',
     title: '',
     side: sideOptions[0][0],
-    group: groupOptions[0][0],
+    group:
+      groupOptions.find(([, label]) => label === '友人')?.[0] ??
+      groupOptions[0][0],
     rsvp:
       rsvpOptions.find(([, label]) => label === '未回答')?.[0] ??
       rsvpOptions[0][0],

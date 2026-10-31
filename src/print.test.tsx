@@ -13,9 +13,9 @@ describe('印刷用席次表（大規模サンプル）', () => {
   it('末尾の空席は1行に集約され、卓見出しの数と矛盾しない', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('tab', { name: '印刷' }))
-    // 大規模サンプル: 7/8の卓が11（A〜K卓）、6/8の卓が4（L〜O卓）
-    // 6/8の卓は「（空席 ×2）」が1行だけ、7/8の卓は「（空席 ×1）」が1行だけ出る
-    expect(screen.getAllByText('（空席 ×2）')).toHaveLength(4)
-    expect(screen.getAllByText('（空席 ×1）')).toHaveLength(11)
+    // 大規模サンプル: 同伴者を含む延べ人数で 8/8の卓が7（A〜G卓）、7/8の卓が8（H〜O卓）
+    // 7/8の卓は「（空席 ×1）」が1行だけ出て、「（空席 ×2）」は出ない
+    expect(screen.queryAllByText('（空席 ×2）')).toHaveLength(0)
+    expect(screen.getAllByText('（空席 ×1）')).toHaveLength(8)
   })
 })

@@ -1,6 +1,6 @@
 import type { AppState, Guest } from '../types';
 import { VIP_PATTERN } from './autoSeat';
-import { assignedGuestAt, tableFill } from './seating';
+import { seatOccupant, tableFill } from './seating';
 
 export interface EtiquetteNote {
   id: string;
@@ -30,8 +30,9 @@ export function checkSeatingEtiquette(state: AppState): EtiquetteNote[] {
   for (const table of state.tables) {
     const occupants: { guest: Guest; seatIndex: number }[] = [];
     for (let i = 0; i < table.seats; i += 1) {
-      const guest = assignedGuestAt(state, table.id, i);
-      if (guest) occupants.push({ guest, seatIndex: i });
+      // 作法チェックは本人の席だけを見る（同伴者席は本人の席として数えない）
+      const occ = seatOccupant(state, table.id, i);
+      if (occ && !occ.companion) occupants.push({ guest: occ.guest, seatIndex: i });
     }
     const fill = tableFill(state, table.id);
     fills.push({ name: table.name, seated: fill.seated });

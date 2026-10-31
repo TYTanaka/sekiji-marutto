@@ -500,6 +500,7 @@ textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
 .seat-no { position: absolute; top: 4px; left: 8px; font-size: 9px; color: var(--muted); font-weight: 700; }
 
 .seat.filled { border: 2px solid var(--rose); background: var(--rose-soft); color: var(--rose-deep); }
+.seat.companion { border: 2px dashed var(--gold-deep, #A8842C); background: var(--gold-soft); color: var(--ink); }
 .seat.empty { border: 2px dashed var(--line-strong); background: rgba(255, 255, 255, .65); color: var(--muted); box-shadow: none; }
 .seat.target { z-index: 2; outline: 3px solid var(--gold); outline-offset: 3px; animation: seatPulse 1.6s ease-out infinite; }
 .seat.armed { outline: 3px solid #C0392B; outline-offset: 1px; background: #FDF0EE; }

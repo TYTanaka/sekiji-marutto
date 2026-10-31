@@ -5,6 +5,10 @@ export interface Summary {
   total: number;
   replied: number;
   attending: number;
+  /** 出席ゲストの同伴者の合計 */
+  companions: number;
+  /** 出席の延べ人数（ゲスト本人＋同伴者） */
+  attendingHeads: number;
   declined: number;
   pending: number;
   unseated: number;
@@ -14,9 +18,14 @@ export interface Summary {
 
 export function summarize(state: AppState): Summary {
   const total = state.guests.length;
-  const attending = state.guests.filter(
+  const attendingGuests = state.guests.filter(
     (guest) => guest.rsvp === 'attending',
-  ).length;
+  );
+  const attending = attendingGuests.length;
+  const companions = attendingGuests.reduce(
+    (sum, guest) => sum + Math.max(0, guest.companions ?? 0),
+    0,
+  );
   const declined = state.guests.filter(
     (guest) => guest.rsvp === 'declined',
   ).length;
@@ -28,6 +37,8 @@ export function summarize(state: AppState): Summary {
     total,
     replied,
     attending,
+    companions,
+    attendingHeads: attending + companions,
     declined,
     pending,
     unseated,
