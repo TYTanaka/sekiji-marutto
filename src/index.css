@@ -425,6 +425,9 @@ textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
 .seating-note { color: var(--muted); font-size: .9375rem; }
 .table-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .add-table-controls { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 700px) {
+  .add-table-controls > button { flex: 1 1 100%; min-height: 44px; }
+}
 
 .tables-grid {
   display: grid;
@@ -1285,6 +1288,7 @@ button:not([class]):hover { background: var(--rose-soft); }
 
 /* ===== 式場提出パック ===== */
 .pack-controls { margin: 14px 0; display: grid; gap: 10px; }
+.pack-controls > .segmented { justify-self: center; }
 .pack-record { display: grid; gap: 8px; justify-items: start; }
 .pack-section { margin-top: 28px; }
 .pack-title { font-family: var(--font-serif); font-size: 1.25rem; margin: 0 0 12px; }

@@ -8,7 +8,7 @@ describe('初回トップページ', () => {
 
   it('初回は説明ページが出て、サンプルでアプリに入れる', () => {
     render(<App />)
-    expect(screen.getByText('席次表とWeb招待状を、ひとつに。')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: '席次表とWeb招待状を、ひとつに。' })).toBeTruthy()
     expect(screen.getByText('ゲスト別リンクで出欠収集')).toBeTruthy()
     expect(screen.queryByRole('tab', { name: '概要' })).toBeNull()
 
@@ -20,7 +20,7 @@ describe('初回トップページ', () => {
   it('データがある再訪では説明ページを挟まない', () => {
     localStorage.setItem('sekiji-state-v2', JSON.stringify({ version: 2, guests: [], tables: [], assignments: {}, info: { groomName: 'A', brideName: 'B', date: '2027-04-18', venue: 'V', message: '' }, tasks: [] }))
     render(<App />)
-    expect(screen.queryByText('席次表とWeb招待状を、ひとつに。')).toBeNull()
+    expect(screen.queryByRole('heading', { name: '席次表とWeb招待状を、ひとつに。' })).toBeNull()
     expect(screen.getByRole('tab', { name: '概要' })).toBeTruthy()
   })
 })

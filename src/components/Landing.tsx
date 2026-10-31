@@ -34,7 +34,7 @@ export function Landing({ onTrySample, onTryLargeSample, onSessionChange }: Land
         <img className="landing-hero-img" src={heroUrl} alt="" />
         <div className="landing-body">
           <p className="inv-kicker">Wedding Preparation</p>
-          <h1 className="landing-title">席次表とWeb招待状を、ひとつに。</h1>
+          <h1 className="landing-title"><span className="nb">席次表とWeb招待状を、</span><span className="nb">ひとつに。</span></h1>
           <p className="landing-lead">
             式場が決まった「あと」の準備は、紙の名簿・Excel・別々のツールに散らかりがちです。
             席次まるっとは、出欠の回答から席次表、印刷までをひとつの名簿でつなぐ、式場に依存しない準備アプリです。
