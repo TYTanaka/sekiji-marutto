@@ -1410,8 +1410,8 @@ button:not([class]):hover { background: var(--rose-soft); }
 
 /* ===== 招待リンクの検索・絞り込み ===== */
 .link-controls { display: flex; flex-direction: column; gap: 10px; align-items: stretch; margin: 14px 0 6px; }
-.link-controls .segmented { display: flex; }
-.link-controls .segmented button { flex: 1 1 auto; padding-left: 10px; padding-right: 10px; }
+.link-controls .segmented { display: grid; grid-template-columns: 1fr 1fr; border-radius: 20px; }
+.link-controls .segmented button { padding-left: 10px; padding-right: 10px; }
 .link-count { font-size: .85rem; }
 
 /* ===== 提出パックのCSV ===== */
