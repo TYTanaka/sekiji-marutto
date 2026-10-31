@@ -68,6 +68,11 @@ function Shell() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // 画面を切り替えたら常に一番上から表示する（前の画面のスクロール位置を引き継がない）
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
+
   const enterApp = useCallback(() => {
     try {
       localStorage.setItem(ENTERED_KEY, '1');
@@ -300,7 +305,7 @@ function Shell() {
                   </button>
                 </div>
               ) : (
-                <button type="button" className="btn btn-ghost" onClick={() => setConfirmingLoad(true)}>
+                <button type="button" className="btn btn-ghost btn-block" onClick={() => setConfirmingLoad(true)}>
                   120名の大規模サンプルを読み込む
                 </button>
               )}

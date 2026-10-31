@@ -445,7 +445,9 @@ textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
   box-shadow: var(--shadow-card);
 }
 
-.table-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.table-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; }
+.table-heading label { white-space: nowrap; }
+.table-heading .btn-danger-ghost { margin-left: auto; }
 
 .round-table {
   position: relative;
@@ -1434,3 +1436,24 @@ button:not([class]):hover { background: var(--rose-soft); }
 @media (max-width: 640px) { .setup-grid { grid-template-columns: 1fr; } }
 .setup-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
 .setup-actions .btn, .setup-actions .btn-ghost { white-space: normal; }
+.setup-actions > .btn-primary { flex: 1 1 100%; }
+.setup-actions > :not(.btn-primary) { flex: 1 1 0; }
+
+/* ===== 折り返しレイアウトの整え（360px実測フィードバック） ===== */
+/* ゲストカード：出欠セグメントを全幅にし、編集・削除は専用の行に右寄せで並べる */
+.guest-side { display: flex; flex-direction: column; gap: 8px; }
+.guest-side .seg { display: flex; align-items: center; }
+.guest-side .seg button { flex: 1 1 0; white-space: nowrap; padding: 8px 6px; }
+@media (max-width: 700px) {
+  .guest-row > .guest-side { flex: 1 1 100%; }
+}
+.guest-sub-actions { display: flex; justify-content: flex-end; gap: 8px; }
+/* 名前は途中で割らず、名前の切れ目でのみ改行する */
+.nb { white-space: nowrap; }
+/* 横幅いっぱいのボタン（設定の大規模サンプル読み込み等） */
+.btn-block { width: 100%; justify-content: center; white-space: normal; text-align: center; }
+/* 概要の催促行：狭幅ではボタンを名前の下に2等分で並べる */
+@media (max-width: 560px) {
+  .guest-row:not(.invite-row) .row-actions { display: flex; width: 100%; margin-left: 0; }
+  .guest-row:not(.invite-row) .row-actions > * { flex: 1 1 0; justify-content: center; }
+}

@@ -324,7 +324,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
               </div>
               {guest.memo && <small className="muted">{guest.memo}</small>}
             </div>
-            <div>
+            <div className="guest-side">
               <span className="seg-label">出欠（タップで記録）</span>
               <div className="seg" role="group" aria-label={`${guest.name}さんの出欠`}>
                 {orderedRsvpOptions.map(([rsvp, label]) => (
@@ -349,12 +349,14 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
                   </button>
                 ))}
               </div>
-              <button type="button" className="btn-ghost" aria-label={`${guest.name}さんを編集`} onClick={() => openEditor(guest)}>
-                編集
-              </button>
-              <button type="button" className="btn-danger-ghost" aria-label={`${guest.name}さんを削除`} onClick={() => setConfirmingDeleteId(guest.id)}>
-                削除
-              </button>
+              <div className="guest-sub-actions">
+                <button type="button" className="btn-ghost" aria-label={`${guest.name}さんを編集`} onClick={() => openEditor(guest)}>
+                  編集
+                </button>
+                <button type="button" className="btn-danger-ghost" aria-label={`${guest.name}さんを削除`} onClick={() => setConfirmingDeleteId(guest.id)}>
+                  削除
+                </button>
+              </div>
               {confirmingDeleteId === guest.id && (
                 <div className="confirm-inline">
                   <span>{`${guest.name}さんを削除しますか？`}</span>
