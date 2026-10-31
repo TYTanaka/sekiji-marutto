@@ -415,6 +415,7 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+.task-form { align-items: end; }
 
 .filters { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
 .filters > .field { flex: 1 1 180px; }
@@ -1023,6 +1024,7 @@ button:not([class]):hover { background: var(--rose-soft); }
   gap: 22px;
   margin-top: 24px;
 }
+.print-tables > .card { margin-top: 0; }
 .print-seats { list-style: none; margin: 0; padding: 0; }
 .print-seat-row {
   display: flex;
@@ -1094,8 +1096,12 @@ button:not([class]):hover { background: var(--rose-soft); }
 .row-actions { flex-wrap: wrap; }
 .row-actions > * { flex-shrink: 0; }
 .guest-row.invite-row { display: grid; gap: 12px; justify-content: stretch; }
-.invite-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.invite-actions .btn { flex: 1 1 96px; }
+.invite-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.invite-actions > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+@media (min-width: 701px) {
+  .invite-actions { display: flex; flex-wrap: nowrap; }
+  .invite-actions .btn { flex: 1 1 0; }
+}
 .copy-status { margin: 0; min-height: 1.3em; font-size: .85rem; color: var(--muted); }
 
 /* ===== ゲスト側ページの見やすさ（年配のゲストにも読みやすく） ===== */

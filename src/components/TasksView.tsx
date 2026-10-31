@@ -136,7 +136,7 @@ export function TasksView() {
         </ul>
       )}
 
-      <form className="form-grid" onSubmit={handleSubmit}>
+      <form className="form-grid task-form" onSubmit={handleSubmit}>
         <label className="field">
           <span>タスク名（必須）</span>
           <input
