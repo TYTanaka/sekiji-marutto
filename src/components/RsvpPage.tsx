@@ -239,7 +239,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
         <fieldset disabled={submitting} className="rsvp-fields">
           <div className="field">
             <span className="field-cap">出欠（必須）</span>
-            <div className="segmented" role="group" aria-label="出欠">
+            <div className="segmented seg-rsvp" role="group" aria-label="出欠">
               {(['attending', 'declined'] as const).map((value) => (
                 <button
                   key={value}

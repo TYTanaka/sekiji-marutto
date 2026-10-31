@@ -768,6 +768,9 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--rose-dee
   white-space: nowrap;
 }
 .segmented button.active { background: var(--surface); color: var(--rose-deep); box-shadow: 0 3px 10px rgba(150, 80, 93, .18); }
+/* 出欠の2択は均等幅で埋める（フォームのグリッドで容器だけ伸びる問題の対策） */
+.seg-rsvp { display: flex; }
+.seg-rsvp button { flex: 1 1 0; }
 button.primary {
   min-height: 48px; padding: 12px 28px; border: 0; border-radius: 999px;
   background: var(--rose-grad); color: #fff; font-weight: 700;

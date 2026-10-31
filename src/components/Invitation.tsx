@@ -125,7 +125,7 @@ export function Invitation() {
 
           <div className="field">
             <span className="field-cap">出欠</span>
-            <div className="segmented" role="group" aria-label="出欠">
+            <div className="segmented seg-rsvp" role="group" aria-label="出欠">
               <button
                 type="button"
                 className={rsvp === 'attending' ? 'active' : ''}
