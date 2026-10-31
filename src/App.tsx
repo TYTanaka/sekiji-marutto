@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { AppStateProvider, useAppState } from './store/appState';
 import { supabase, cloudEnabled } from './lib/supabase';
@@ -16,6 +16,8 @@ import { TasksView } from './components/TasksView';
 import { CheckinView } from './components/CheckinView';
 import { UndoToast } from './components/UndoToast';
 import { createLargeSeedState } from './lib/seedLarge';
+import { downloadBackup, parseBackup } from './lib/backup';
+import type { AppState } from './types';
 
 type View = 'dashboard' | 'guests' | 'seating' | 'invitation' | 'tasks' | 'print' | 'checkin' | 'settings';
 
@@ -116,6 +118,37 @@ function Shell() {
       '120名の大規模サンプルを読み込みました',
     );
     setConfirmingLoad(false);
+  }
+
+  const [pendingBackup, setPendingBackup] = useState<AppState | null>(null);
+  const [backupError, setBackupError] = useState('');
+  const backupFileRef = useRef<HTMLInputElement | null>(null);
+
+  async function handleBackupFile(file: File) {
+    setBackupError('');
+    const parsed = parseBackup(await file.text());
+    if (!parsed) {
+      setPendingBackup(null);
+      setBackupError(
+        'バックアップファイルを読み取れませんでした。席次まるっとで書き出したJSONファイルか確認してください。',
+      );
+      return;
+    }
+    setPendingBackup(parsed);
+  }
+
+  function cancelBackup() {
+    setPendingBackup(null);
+    if (backupFileRef.current) backupFileRef.current.value = '';
+  }
+
+  function applyBackup() {
+    if (!pendingBackup) return;
+    dispatchWithUndo(
+      { type: 'hydrate', state: pendingBackup },
+      'バックアップから復元しました',
+    );
+    cancelBackup();
   }
 
   function tryLargeSample() {
@@ -308,6 +341,44 @@ function Shell() {
                 <button type="button" className="btn btn-ghost btn-block" onClick={() => setConfirmingLoad(true)}>
                   120名の大規模サンプルを読み込む
                 </button>
+              )}
+            </div>
+            <div className="backup-zone">
+              <h3>データのバックアップ</h3>
+              <p className="muted">
+                いまの準備データをJSONファイルに書き出しておくと、端末やブラウザを変えても復元できます。読み込むと現在のデータと置き換わりますが、実行直後であれば「元に戻す」で取り消せます。
+              </p>
+              <div className="backup-actions">
+                <button type="button" className="btn btn-ghost btn-block" onClick={() => downloadBackup(state)}>
+                  バックアップを書き出す
+                </button>
+                <label className="btn btn-ghost btn-block backup-file-label">
+                  バックアップを読み込む
+                  <input
+                    ref={backupFileRef}
+                    type="file"
+                    accept=".json,application/json"
+                    hidden
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void handleBackupFile(file);
+                    }}
+                  />
+                </label>
+              </div>
+              {backupError && (
+                <p className="backup-error" role="alert">{backupError}</p>
+              )}
+              {pendingBackup && (
+                <div className="sample-confirm">
+                  <span>{`「${pendingBackup.info.groomName} ・ ${pendingBackup.info.brideName}」のバックアップです。現在のデータは置き換わります。本当に読み込みますか？`}</span>
+                  <button type="button" className="btn btn-primary" onClick={applyBackup}>
+                    読み込む
+                  </button>
+                  <button type="button" className="btn btn-ghost" onClick={cancelBackup}>
+                    やめる
+                  </button>
+                </div>
               )}
             </div>
             <div className="danger-zone">

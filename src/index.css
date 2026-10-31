@@ -885,6 +885,21 @@ button:not([class]):hover { background: var(--rose-soft); }
 .sample-zone h3 { margin: 0 0 6px; font-size: 1rem; }
 .sample-zone p { margin: 0 0 14px; font-size: .9rem; line-height: 1.7; }
 
+/* ===== 設定：バックアップゾーン ===== */
+.backup-zone {
+  padding: 18px;
+  margin-top: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-warm);
+}
+.backup-zone h3 { margin: 0 0 6px; font-size: 1rem; }
+.backup-zone p { margin: 0 0 14px; font-size: .9rem; line-height: 1.7; }
+.backup-actions { display: grid; gap: 10px; }
+.backup-file-label { text-align: center; cursor: pointer; }
+.backup-error { color: var(--danger); font-weight: 600; }
+.backup-zone .sample-confirm { margin-top: 14px; }
+
 /* ===== 招待状 v4 ===== */
 .invitation {
   padding: 64px 44px 58px;
