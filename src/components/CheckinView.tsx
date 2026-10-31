@@ -166,8 +166,8 @@ export function CheckinView() {
                   {guest.title}
                   {guest.companions > 0 && ` ／ 同伴者 ${guest.companions}名`}
                 </span>
+                {guest.allergy && <span className="checkin-allergy">アレルギー：{guest.allergy}</span>}
               </span>
-              {guest.allergy && <span className="checkin-allergy">アレルギー：{guest.allergy}</span>}
             </button>
           );
         })}

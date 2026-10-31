@@ -1314,7 +1314,8 @@ button:not([class]):hover { background: var(--rose-soft); }
 .checkin-name { font-weight: 700; font-size: 1.02rem; }
 .checkin-sub { color: var(--muted); font-size: .83rem; }
 .checkin-allergy {
-  flex-shrink: 0;
+  justify-self: start;
+  margin-top: 4px;
   padding: 3px 10px;
   border-radius: 999px;
   background: #FDF0F0;
@@ -1322,8 +1323,4 @@ button:not([class]):hover { background: var(--rose-soft); }
   color: var(--danger, #B34747);
   font-size: .78rem;
   font-weight: 700;
-}
-@media (max-width: 640px) {
-  .checkin-row { flex-wrap: wrap; }
-  .checkin-allergy { margin-left: 42px; }
 }
