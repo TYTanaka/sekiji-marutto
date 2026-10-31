@@ -299,6 +299,7 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
 .btn-danger-ghost:hover:not(:disabled) { background: var(--danger-soft); }
 
 /* ===== 出欠セグメント ===== */
+.seg-label { display: block; font-size: .78rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
 .seg {
   display: inline-flex;
   flex-wrap: wrap;
@@ -681,7 +682,10 @@ textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
   letter-spacing: .34em;
   font-size: .78rem;
   text-transform: uppercase;
+  text-shadow: 0 1px 10px rgba(255, 253, 248, .95), 0 0 4px rgba(255, 253, 248, .9);
 }
+
+input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--rose-deep); flex-shrink: 0; }
 .hero-names {
   margin: 0 0 6px;
   font-family: var(--font-serif);
@@ -1115,6 +1119,9 @@ button:not([class]):hover { background: var(--rose-soft); }
 .table-nav::-webkit-scrollbar { display: none; }
 .table-nav-chip {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   padding: 7px 13px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
@@ -1145,7 +1152,8 @@ button:not([class]):hover { background: var(--rose-soft); }
   z-index: 60;
   display: flex;
   align-items: center;
-  gap: 14px;
+  flex-wrap: wrap;
+  gap: 10px 14px;
   max-width: calc(100vw - 32px);
   padding: 12px 16px;
   border-radius: 12px;
@@ -1154,6 +1162,7 @@ button:not([class]):hover { background: var(--rose-soft); }
   box-shadow: 0 12px 32px rgba(62, 47, 40, .35);
   font-size: .92rem;
 }
+.undo-toast > span { flex: 1 1 180px; min-width: 0; }
 .undo-btn {
   background: #FFF8F0;
   color: #3E2F28;
@@ -1386,7 +1395,7 @@ button:not([class]):hover { background: var(--rose-soft); }
   }
   .mobile-more button.active { background: var(--gold-soft); color: var(--rose-deep); }
   .main { padding-bottom: 100px; }
-  .undo-toast { bottom: 86px; }
+  .undo-toast { bottom: 86px; left: 16px; right: 16px; transform: none; }
 }
 @media print {
   .mobile-tabbar { display: none !important; }

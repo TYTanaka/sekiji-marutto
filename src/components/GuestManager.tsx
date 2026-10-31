@@ -325,6 +325,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
               {guest.memo && <small className="muted">{guest.memo}</small>}
             </div>
             <div>
+              <span className="seg-label">出欠（タップで記録）</span>
               <div className="seg" role="group" aria-label={`${guest.name}さんの出欠`}>
                 {orderedRsvpOptions.map(([rsvp, label]) => (
                   <button

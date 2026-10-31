@@ -201,7 +201,7 @@ function Shell() {
           {view === 'dashboard' && (<Dashboard onShowPending={() => { setView('guests'); setFocusPending((n) => n + 1); }} />)}
           {view === 'guests' && <GuestManager focusPendingSignal={focusPending} />}
           {view === 'seating' && <SeatingEditor />}
-          {view === 'invitation' && (<><Invitation /><InviteLinks /></>)}
+          {view === 'invitation' && (<><InviteLinks /><Invitation /></>)}
           {view === 'tasks' && <TasksView />}
           {view === 'print' && <PrintView />}
           {view === 'checkin' && <CheckinView />}

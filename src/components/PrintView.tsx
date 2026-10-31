@@ -73,14 +73,6 @@ export function PrintView() {
           {groomName} ・ {brideName}　／　{date.replaceAll('-', '/')}　／　{venue}
         </p>
       </header>
-      <button
-        type="button"
-        className="no-print primary"
-        onClick={() => window.print()}
-      >
-        印刷する
-      </button>
-
       <div className="no-print pack-controls">
         <div className="segmented" role="group" aria-label="印刷の種類">
           <button
@@ -146,6 +138,14 @@ export function PrintView() {
           </div>
         )}
       </div>
+
+      <button
+        type="button"
+        className="no-print primary print-action"
+        onClick={() => window.print()}
+      >
+        印刷する
+      </button>
 
       <div className="print-tables">
       {state.tables.map((table) => {

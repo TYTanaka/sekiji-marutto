@@ -189,30 +189,6 @@ export function SeatingEditor() {
         <div className="celebration">全員の席が決まりました。</div>
       )}
 
-      {(() => {
-        const notes = checkSeatingEtiquette(state);
-        const seatedCount = Object.keys(state.assignments).length;
-        if (seatedCount === 0) return null;
-        return (
-          <div className="card etiquette-panel">
-            <h3>作法チェック</h3>
-            {notes.length === 0 ? (
-              <p className="muted">作法の観点で気になる点はありませんでした。</p>
-            ) : (
-              <ul className="etiquette-list">
-                {notes.map((note) => (
-                  <li key={note.id} className={note.level === 'warn' ? 'eq-warn' : 'eq-check'}>
-                    <span className="eq-badge">{note.level === 'warn' ? '要確認' : '確認'}</span>
-                    <span>{note.text}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <p className="muted">上座・下座や親族の席など、日本の披露宴の作法から自動でチェックしています。</p>
-          </div>
-        );
-      })()}
-
       <section aria-labelledby="unassigned-guests-heading">
         <h2 id="unassigned-guests-heading">
           未配置のゲスト（出席） <span>{unassigned.length}名</span>
@@ -440,7 +416,39 @@ export function SeatingEditor() {
       </div>
       <p className="seating-note">
         配置した席を外すときは、席をタップして確認表示を出してから、もう一度タップしてください。
+        上座（各卓の1番席）は入口から最も遠い、最も格式の高い席です。主賓や上司の方の席として使います。
       </p>
+
+      {(() => {
+        const notes = checkSeatingEtiquette(state);
+        const seatedCount = Object.keys(state.assignments).length;
+        if (seatedCount === 0) return null;
+        return (
+          <div className="card etiquette-panel">
+            <h3>作法チェック</h3>
+            {notes.length === 0 ? (
+              <p className="muted">
+                {unassigned.length > 0
+                  ? '配置済みの席については、作法の観点で気になる点はありませんでした。'
+                  : '作法の観点で気になる点はありませんでした。'}
+              </p>
+            ) : (
+              <ul className="etiquette-list">
+                {notes.map((note) => (
+                  <li key={note.id} className={note.level === 'warn' ? 'eq-warn' : 'eq-check'}>
+                    <span className="eq-badge">{note.level === 'warn' ? '要確認' : '確認'}</span>
+                    <span>{note.text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {unassigned.length > 0 && (
+              <p className="muted">未配置の出席者が {unassigned.length} 名います（チェックは配置済みの席が対象です）。</p>
+            )}
+            <p className="muted">上座・下座や親族の席など、日本の披露宴の作法から自動でチェックしています。</p>
+          </div>
+        );
+      })()}
     </div>
   );
 }
