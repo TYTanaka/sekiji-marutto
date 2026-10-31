@@ -48,7 +48,7 @@
 - `invitation_opens` テーブル（wedding_id, token, guest_id, opened_at／PK は wedding_id+token で最初の開封のみ保持）。
 - `get_invitation` が招待を返すついでに開封を INSERT する（SECURITY DEFINER のため anon でも書き込めるが、直接のテーブル書き込み権限は誰にも与えない）。
 - 読み取りは所有者のみ（RLS: 自分の weddings 行に紐づくものだけ select 可）。主催者クライアントはログイン後に取得し、Realtime（INSERT）で随時更新する。
-- 既存プロジェクトへの適用は `supabase/migration_20261031_open_tracking.sql` を SQL Editor で1回実行する。未適用でもアプリは壊れない（開封情報が空になるだけ）。
+- 既存プロジェクトへの適用は、統合版の `supabase/migration_20261031_opens_and_seat.sql`（開封記録＋お席表示の両方を含む）を SQL Editor で1回実行する。**本プロジェクトには 2026-10-31 に適用済み**（実行結果 Success、テーブル作成を検証クエリで確認）。未適用でもアプリは壊れない（開封情報が空になり、お席は表示されないだけ）。
 
 ## 移行・運用
 - SQL は `supabase/schema.sql` としてリポジトリ管理し、プロジェクト作成後にそのまま実行する。追加変更は `supabase/migration_*.sql` に切り出す。
