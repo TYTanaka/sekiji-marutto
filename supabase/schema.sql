@@ -81,6 +81,8 @@ declare
     v_wedding_id uuid;
     v_state jsonb;
     v_guest jsonb;
+    v_assignment jsonb;
+    v_table_name text;
 begin
     select w.id, w.state, g.guest
     into v_wedding_id, v_state, v_guest
@@ -97,6 +99,15 @@ begin
     values (v_wedding_id, p_token, v_guest ->> 'id')
     on conflict (wedding_id, token) do nothing;
 
+    v_assignment := v_state -> 'assignments' -> (v_guest ->> 'id');
+    if v_assignment is not null then
+        select t.tbl ->> 'name'
+        into v_table_name
+        from jsonb_array_elements(v_state -> 'tables') as t(tbl)
+        where t.tbl ->> 'id' = v_assignment ->> 'tableId'
+        limit 1;
+    end if;
+
     return jsonb_build_object(
         'info', v_state -> 'info',
         'guest', jsonb_build_object(
@@ -107,7 +118,14 @@ begin
             'companions', v_guest -> 'companions',
             'allergy', v_guest -> 'allergy',
             'memo', v_guest -> 'memo'
-        )
+        ),
+        'seat', case
+            when v_assignment is null or v_table_name is null then null
+            else jsonb_build_object(
+                'tableName', v_table_name,
+                'seatIndex', (v_assignment ->> 'seatIndex')::int
+            )
+        end
     );
 end;
 $$;

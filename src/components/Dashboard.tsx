@@ -7,8 +7,13 @@ import {
   buildOpenedReminderMessage,
   inviteUrlFor,
 } from '../lib/reminder';
+import { createDefaultTasks } from '../lib/tasks';
 import type { Guest } from '../types';
 import heroUrl from '../assets/hero.jpg';
+
+const SETUP_DONE_KEY = 'sekiji-setup-done-v1';
+const SAMPLE_GROOM = '佐藤 健太';
+const SAMPLE_BRIDE = '鈴木 美咲';
 
 function daysUntil(iso: string): number | null {
   const target = new Date(`${iso}T00:00:00`);
@@ -19,7 +24,7 @@ function daysUntil(iso: string): number | null {
 }
 
 export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
-  const { state, changes, clearChanges, opens } = useAppState();
+  const { state, changes, clearChanges, opens, dispatch, dispatchWithUndo } = useAppState();
   const sum = summarize(state);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const pendingGuests = state.guests.filter((g) => g.rsvp === 'pending');
@@ -53,8 +58,118 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
     }
   }
 
+  // 初期設定カード： まだサンプルの式情報のままなら、自分の式で始める導線を出す
+  const isSampleInfo =
+    state.info.groomName === SAMPLE_GROOM && state.info.brideName === SAMPLE_BRIDE;
+  const [setupDone, setSetupDone] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(SETUP_DONE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [setupForm, setSetupForm] = useState({
+    groomName: state.info.groomName,
+    brideName: state.info.brideName,
+    date: state.info.date,
+    venue: state.info.venue,
+  });
+  const showSetup = isSampleInfo && !setupDone;
+
+  function markSetupDone() {
+    setSetupDone(true);
+    try {
+      localStorage.setItem(SETUP_DONE_KEY, '1');
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  function startWithInfo() {
+    dispatch({
+      type: 'setInfo',
+      info: { ...state.info, ...setupForm },
+    });
+    markSetupDone();
+  }
+
+  function startFresh() {
+    dispatchWithUndo(
+      {
+        type: 'hydrate',
+        state: {
+          ...state,
+          info: { ...state.info, ...setupForm },
+          guests: [],
+          assignments: {},
+          tasks: createDefaultTasks(setupForm.date || state.info.date),
+        },
+      },
+      '自分の式の情報で開始しました（ゲストは空です）',
+    );
+    markSetupDone();
+  }
+
   return (
     <section className="view-enter">
+      {showSetup && (
+        <div className="card setup-card">
+          <h2>自分の式の情報で始めましょう</h2>
+          <p className="muted">
+            いま表示されているのはサンプルの式です。お二人の情報を入れると、そのまま自分の準備データとして使い始められます。
+          </p>
+          <div className="setup-grid">
+            <div className="field">
+              <label htmlFor="setup-groom">新郎のお名前</label>
+              <input
+                id="setup-groom"
+                className="input"
+                value={setupForm.groomName}
+                onChange={(e) => setSetupForm({ ...setupForm, groomName: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="setup-bride">新婦のお名前</label>
+              <input
+                id="setup-bride"
+                className="input"
+                value={setupForm.brideName}
+                onChange={(e) => setSetupForm({ ...setupForm, brideName: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="setup-date">挙式日</label>
+              <input
+                id="setup-date"
+                className="input"
+                type="date"
+                value={setupForm.date}
+                onChange={(e) => setSetupForm({ ...setupForm, date: e.target.value })}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="setup-venue">会場</label>
+              <input
+                id="setup-venue"
+                className="input"
+                value={setupForm.venue}
+                onChange={(e) => setSetupForm({ ...setupForm, venue: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="setup-actions">
+            <button type="button" className="btn btn-primary" onClick={startWithInfo}>
+              この内容で始める（ゲストはサンプルのまま）
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={startFresh}>
+              ゲストを空にして始める
+            </button>
+            <button type="button" className="btn-ghost" onClick={markSetupDone}>
+              あとで
+            </button>
+          </div>
+        </div>
+      )}
       <div className="hero-band">
         <img className="hero-band-img" src={heroUrl} alt="" aria-hidden="true" />
         <div className="hero-band-body">

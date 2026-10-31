@@ -6,6 +6,7 @@ import heroUrl from '../assets/hero.jpg';
 
 interface LandingProps {
   onTrySample: () => void;
+  onTryLargeSample: () => void;
   onSessionChange: (session: Session | null) => void;
 }
 
@@ -24,7 +25,7 @@ const features = [
   },
 ];
 
-export function Landing({ onTrySample, onSessionChange }: LandingProps) {
+export function Landing({ onTrySample, onTryLargeSample, onSessionChange }: LandingProps) {
   const [showAuth, setShowAuth] = useState(false);
 
   return (
@@ -64,6 +65,12 @@ export function Landing({ onTrySample, onSessionChange }: LandingProps) {
           </div>
           <p className="muted landing-note">
             サンプルはこの端末の中だけで完結します。ログインすると、クラウド保存と本物の招待リンクが使えます。
+          </p>
+          <p className="landing-large">
+            <button type="button" className="btn-ghost" onClick={onTryLargeSample}>
+              120名の大規模サンプルで試す
+            </button>
+            <span className="muted">実際の披露宴規模（120名・15卓）での操作感を確認できます。</span>
           </p>
 
           {showAuth && cloudEnabled && (

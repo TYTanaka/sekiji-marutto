@@ -11,6 +11,7 @@ import {
   diffSubmission,
   type SubmissionSnapshot,
 } from '../lib/submission';
+import { buildGuestsCsv, buildSeatingCsv, downloadCsv } from '../lib/csv';
 
 const SUBMISSION_KEY = 'sekiji-submission-v1';
 
@@ -125,6 +126,23 @@ export function PrintView() {
                 現在の内容を提出版として記録
               </button>
             )}
+            <div className="pack-csv">
+              <span className="muted">式場がExcelで受け取りたい場合：</span>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => downloadCsv('ゲスト一覧.csv', buildGuestsCsv(state))}
+              >
+                ゲスト一覧をCSVでダウンロード
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => downloadCsv('席次表.csv', buildSeatingCsv(state))}
+              >
+                席次表をCSVでダウンロード
+              </button>
+            </div>
           </div>
         )}
       </div>

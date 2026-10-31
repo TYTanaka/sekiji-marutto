@@ -271,6 +271,8 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity:
   justify-content: center;
   gap: 8px;
   min-height: 46px;
+  min-width: 0;
+  max-width: 100%;
   padding: 11px 22px;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -1324,3 +1326,97 @@ button:not([class]):hover { background: var(--rose-soft); }
   font-size: .78rem;
   font-weight: 700;
 }
+
+/* ===== モバイル下部タブバー ===== */
+.mobile-tabbar { display: none; }
+@media (max-width: 700px) {
+  .app-header .tabs { display: none; }
+  .mobile-tabbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 70;
+    gap: 4px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    background: rgba(255, 251, 245, .97);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -6px 24px rgba(150, 80, 93, .08);
+  }
+  .mtab {
+    flex: 1;
+    min-height: 52px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: .85rem;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .mtab.active { background: var(--gold-soft); color: var(--rose-deep); }
+  .mobile-more {
+    position: absolute;
+    right: 8px;
+    bottom: calc(100% + 8px);
+    display: grid;
+    gap: 4px;
+    min-width: 168px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    box-shadow: 0 14px 34px rgba(62, 47, 40, .20);
+  }
+  .mobile-more button {
+    min-height: 48px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+  .mobile-more button.active { background: var(--gold-soft); color: var(--rose-deep); }
+  .main { padding-bottom: 100px; }
+  .undo-toast { bottom: 86px; }
+}
+@media print {
+  .mobile-tabbar { display: none !important; }
+}
+.landing-large { margin-top: 14px; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+
+/* ===== 招待リンクの検索・絞り込み ===== */
+.link-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 14px 0 6px; }
+.link-controls .input { flex: 1 1 180px; }
+.link-count { font-size: .85rem; }
+
+/* ===== 提出パックのCSV ===== */
+.pack-csv { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* ===== 招待状のお席表示 ===== */
+.inv-seat {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 20px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: var(--gold-soft);
+  color: var(--gold-deep);
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+
+/* ===== 初期設定カード ===== */
+.setup-card { border-color: var(--gold); background: linear-gradient(180deg, #FFFDF8, #fff); }
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+@media (max-width: 640px) { .setup-grid { grid-template-columns: 1fr; } }
+.setup-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+.setup-actions .btn, .setup-actions .btn-ghost { white-space: normal; }

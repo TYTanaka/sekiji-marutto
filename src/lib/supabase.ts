@@ -26,6 +26,8 @@ export interface InvitationData {
     allergy: string
     memo: string
   }
+  /** 席次が決まっている場合のお席（未配置なら null / 旧RPCでは未定義） */
+  seat?: { tableName: string; seatIndex: number } | null
 }
 
 export async function fetchInvitation(

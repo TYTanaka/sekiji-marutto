@@ -69,10 +69,19 @@ export default function RsvpPage({ token }: RsvpPageProps) {
         const guest = cloudEnabled
           ? undefined
           : current.guests.find((item) => item.inviteToken === token);
+        const localSeat = (() => {
+          if (!guest) return null;
+          const assignment = current.assignments[guest.id];
+          if (!assignment) return null;
+          const table = current.tables.find((t) => t.id === assignment.tableId);
+          return table
+            ? { tableName: table.name, seatIndex: assignment.seatIndex }
+            : null;
+        })();
         const data: InvitationData | null = cloudEnabled
           ? await fetchInvitation(token)
           : guest
-            ? { info: current.info, guest }
+            ? { info: current.info, guest, seat: localSeat }
             : null;
 
         if (cancelled) return;
@@ -210,6 +219,11 @@ export default function RsvpPage({ token }: RsvpPageProps) {
         <p className="inv-venue">{info.venue}</p>
         <p className="inv-message">{info.message}</p>
         <p className="inv-guest">{guest.name} 様</p>
+        {invitation.seat && (
+          <p className="inv-seat">
+            お席のご案内： {invitation.seat.tableName} {invitation.seat.seatIndex + 1}番席
+          </p>
+        )}
       </section>
 
       <form

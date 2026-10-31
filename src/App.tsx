@@ -30,6 +30,21 @@ const tabs: { view: View; label: string }[] = [
   { view: 'settings', label: '設定' },
 ];
 
+/** スマホの下部バーに出す主要タブ（残りは「その他」にまとめる） */
+const mobilePrimaryViews: View[] = ['dashboard', 'guests', 'seating', 'invitation', 'checkin'];
+const mobileMoreViews: View[] = ['tasks', 'print', 'settings'];
+
+const MOBILE_LABELS: Record<View, string> = {
+  dashboard: '概要',
+  guests: 'ゲスト',
+  seating: '席次',
+  invitation: '招待状',
+  tasks: '準備',
+  print: '印刷',
+  checkin: '受付',
+  settings: '設定',
+};
+
 const ENTERED_KEY = 'sekiji-entered-v1';
 const STATE_KEY = 'sekiji-state-v2';
 
@@ -51,6 +66,7 @@ function Shell() {
   });
   const [authOpen, setAuthOpen] = useState(false);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const enterApp = useCallback(() => {
     try {
@@ -97,6 +113,19 @@ function Shell() {
     setConfirmingLoad(false);
   }
 
+  function tryLargeSample() {
+    dispatchWithUndo(
+      { type: 'hydrate', state: createLargeSeedState() },
+      '120名の大規模サンプルを読み込みました',
+    );
+    enterApp();
+  }
+
+  function selectView(next: View) {
+    setView(next);
+    setMoreOpen(false);
+  }
+
   const timeText = savedAt
     ? `${savedAt.getHours()}:${String(savedAt.getMinutes()).padStart(2, '0')}`
     : '';
@@ -112,7 +141,13 @@ function Shell() {
             : '';
 
   if (!entered) {
-    return <Landing onTrySample={enterApp} onSessionChange={handleSession} />;
+    return (
+      <Landing
+        onTrySample={enterApp}
+        onTryLargeSample={tryLargeSample}
+        onSessionChange={handleSession}
+      />
+    );
   }
 
   return (
@@ -300,6 +335,42 @@ function Shell() {
           席次まるっと — ゲスト名簿・出欠・席次表をひとつに。
         </small>
       </footer>
+
+      <nav className="mobile-tabbar" aria-label="メインメニュー（モバイル）">
+        {mobilePrimaryViews.map((v) => (
+          <button
+            key={v}
+            type="button"
+            className={`mtab${view === v ? ' active' : ''}`}
+            aria-current={view === v ? 'page' : undefined}
+            onClick={() => selectView(v)}
+          >
+            {MOBILE_LABELS[v]}
+          </button>
+        ))}
+        <button
+          type="button"
+          className={`mtab${mobileMoreViews.includes(view) ? ' active' : ''}`}
+          aria-expanded={moreOpen}
+          onClick={() => setMoreOpen((open) => !open)}
+        >
+          その他
+        </button>
+        {moreOpen && (
+          <div className="mobile-more">
+            {mobileMoreViews.map((v) => (
+              <button
+                key={v}
+                type="button"
+                className={view === v ? 'active' : ''}
+                onClick={() => selectView(v)}
+              >
+                {MOBILE_LABELS[v]}
+              </button>
+            ))}
+          </div>
+        )}
+      </nav>
       <UndoToast />
     </>
   );
