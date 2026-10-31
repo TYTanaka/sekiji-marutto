@@ -761,10 +761,11 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--rose-dee
 }
 .tasks-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 
-.segmented { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); }
+.segmented { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface-2); max-width: 100%; }
 .segmented button {
   min-height: 46px; padding: 9px 26px; border: 0; border-radius: 999px;
   background: transparent; color: var(--muted); font-weight: 700; font-size: 1rem;
+  white-space: nowrap;
 }
 .segmented button.active { background: var(--surface); color: var(--rose-deep); box-shadow: 0 3px 10px rgba(150, 80, 93, .18); }
 button.primary {
@@ -1403,8 +1404,9 @@ button:not([class]):hover { background: var(--rose-soft); }
 .landing-large { margin-top: 14px; display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
 
 /* ===== 招待リンクの検索・絞り込み ===== */
-.link-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 14px 0 6px; }
-.link-controls .input { flex: 1 1 180px; }
+.link-controls { display: flex; flex-direction: column; gap: 10px; align-items: stretch; margin: 14px 0 6px; }
+.link-controls .segmented { display: flex; }
+.link-controls .segmented button { flex: 1 1 auto; padding-left: 10px; padding-right: 10px; }
 .link-count { font-size: .85rem; }
 
 /* ===== 提出パックのCSV ===== */
