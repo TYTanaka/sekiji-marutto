@@ -1,11 +1,13 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AppStateProvider, useAppState } from './store/appState';
-import { supabase, cloudEnabled } from './lib/supabase';
+import { cloudEnabled } from './lib/config';
 import { parseRoute, navigateTo, type Route } from './lib/route';
 import { clearDeviceScopedKeys } from './lib/deviceKeys';
 import { loadAnalytics, trackPageView } from './lib/analytics';
 import { Landing } from './components/Landing';
-import { AuthPage } from './components/AuthPage';
+const AuthPage = lazy(() =>
+  import('./components/AuthPage').then((m) => ({ default: m.AuthPage })),
+);
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Dashboard } from './components/Dashboard';
 import { GuestManager } from './components/GuestManager';
@@ -83,22 +85,29 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
   }, [view]);
 
   // 本番モードではヘッダーにログイン中アカウントを表示する（認証フォームは置かない）
+  // Supabase クライアントは初期表示のバンドルから分離し、ここで遅延読み込みする
   useEffect(() => {
-    if (demo || !cloudEnabled || !supabase) return;
+    if (demo || !cloudEnabled) return;
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (active) setSessionEmail(data.session?.user.email ?? null);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setSessionEmail(session?.user.email ?? null);
+    let unsubscribe: (() => void) | undefined;
+    void import('./lib/supabase').then(({ supabase }) => {
+      if (!active || !supabase) return;
+      void supabase.auth.getSession().then(({ data }) => {
+        if (active) setSessionEmail(data.session?.user.email ?? null);
+      });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (active) setSessionEmail(session?.user.email ?? null);
+      });
+      unsubscribe = () => subscription.unsubscribe();
     });
     return () => {
       active = false;
-      subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, [demo]);
 
   async function logout() {
+    const { supabase } = await import('./lib/supabase');
     if (!supabase) return;
     await supabase.auth.signOut();
     // 端末に残る式単位の補助データ（受付チェック等）は次の利用者に見せない
@@ -609,17 +618,22 @@ function AppGate() {
   );
 
   useEffect(() => {
-    if (!cloudEnabled || !supabase) return;
+    if (!cloudEnabled) return;
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (active) setStatus(data.session ? 'in' : 'out');
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setStatus(session ? 'in' : 'out');
+    let unsubscribe: (() => void) | undefined;
+    void import('./lib/supabase').then(({ supabase }) => {
+      if (!active || !supabase) return;
+      void supabase.auth.getSession().then(({ data }) => {
+        if (active) setStatus(data.session ? 'in' : 'out');
+      });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (active) setStatus(session ? 'in' : 'out');
+      });
+      unsubscribe = () => subscription.unsubscribe();
     });
     return () => {
       active = false;
-      subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 
@@ -711,10 +725,18 @@ export default function App() {
       content = <DemoRoute key={route.large ? 'large' : 'normal'} large={route.large} />;
       break;
     case 'login':
-      content = <AuthPage mode="login" />;
+      content = (
+        <Suspense fallback={<ViewLoading />}>
+          <AuthPage mode="login" />
+        </Suspense>
+      );
       break;
     case 'signup':
-      content = <AuthPage mode="signup" />;
+      content = (
+        <Suspense fallback={<ViewLoading />}>
+          <AuthPage mode="signup" />
+        </Suspense>
+      );
       break;
     case 'app':
       content = <AppGate />;

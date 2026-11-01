@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../store/appState';
-import { newInviteToken } from '../lib/supabase';
+import { newInviteToken } from '../lib/tokens';
 import {
   type Guest,
   type GuestGroup,
@@ -62,6 +62,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
   const [showForm, setShowForm] = useState(false);
   const [draft, setDraft] = useState<GuestDraft>(() => createDraft());
   const [saved, setSaved] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (focusPendingSignal > 0) setRsvpFilter('pending');
@@ -136,11 +137,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
     if (addAnother && !editing) {
       // 連続登録：側・グループは引き継ぎ、名前欄へフォーカスを戻す
       setDraft({ ...createDraft(), side: values.side, group: values.group });
-      window.setTimeout(() => {
-        document
-          .querySelector<HTMLInputElement>('#guest-form input')
-          ?.focus();
-      }, 0);
+      window.setTimeout(() => nameInputRef.current?.focus(), 0);
       return;
     }
 
@@ -184,6 +181,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
           <label>
             名前（必須）
             <input
+              ref={nameInputRef}
               className="input"
               required
               autoFocus

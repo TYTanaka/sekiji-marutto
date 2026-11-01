@@ -28,12 +28,9 @@ export function TasksView() {
   const weddingDate = state.info.date ? parseDate(state.info.date) : null;
   const days = weddingDate ? calendarDay(weddingDate) - today : null;
 
-  const sortedTasks = [...state.tasks].sort((a, b) => {
-    if (!a.dueDate && !b.dueDate) return 0;
-    if (!a.dueDate) return 1;
-    if (!b.dueDate) return -1;
-    return a.dueDate.localeCompare(b.dueDate);
-  });
+  // 表示順は保存された並び順（既定タスクは期日順に生成される）。
+  // ↑↓ボタンで自由に並び替えられるため、期日なしのタスクも好きな位置に置ける。
+  const sortedTasks = state.tasks;
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -84,7 +81,7 @@ export function TasksView() {
         <p className="muted">準備タスクはまだありません。</p>
       ) : (
         <ul>
-          {sortedTasks.map((task) => {
+          {sortedTasks.map((task, index) => {
             const due = task.dueDate ? parseDate(task.dueDate) : null;
             const overdue = due !== null && calendarDay(due) < today && !task.done;
 
@@ -117,6 +114,28 @@ export function TasksView() {
                   <span className="task-due overdue">期限を過ぎています</span>
                 )}
 
+                <button
+                  className="btn btn-ghost task-move"
+                  type="button"
+                  aria-label={`「${task.title}」を上へ`}
+                  disabled={index === 0}
+                  onClick={() =>
+                    dispatch({ type: 'moveTask', taskId: task.id, direction: -1 })
+                  }
+                >
+                  ↑
+                </button>
+                <button
+                  className="btn btn-ghost task-move"
+                  type="button"
+                  aria-label={`「${task.title}」を下へ`}
+                  disabled={index === sortedTasks.length - 1}
+                  onClick={() =>
+                    dispatch({ type: 'moveTask', taskId: task.id, direction: 1 })
+                  }
+                >
+                  ↓
+                </button>
                 <button
                   className="btn btn-ghost"
                   type="button"

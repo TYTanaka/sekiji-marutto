@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useAppState } from '../store/appState';
-import { scopedDeviceKey } from '../lib/deviceKeys';
+import { scopedDeviceKey, legacyScopedDeviceKey } from '../lib/deviceKeys';
 import type { Guest } from '../types';
 
 const CHECKIN_KEY = 'sekiji-checkin-v1';
 
-function loadCheckins(key: string): Record<string, boolean> {
+function loadCheckins(key: string, legacyKey: string): Record<string, boolean> {
   try {
-    const raw = localStorage.getItem(key);
+    // 旧方式（表示情報の指紋）で保存されたチェックがあれば引き継ぐ
+    const raw = localStorage.getItem(key) ?? localStorage.getItem(legacyKey);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
       if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
@@ -30,9 +31,9 @@ interface Row {
 export function CheckinView() {
   const { state } = useAppState();
   // 到着チェックは式ごとに端末内キー分離する（同じ端末の別の式に残さない）
-  const storageKey = scopedDeviceKey(CHECKIN_KEY, state.info);
+  const storageKey = scopedDeviceKey(CHECKIN_KEY, state);
   const [checkins, setCheckins] = useState<Record<string, boolean>>(() =>
-    loadCheckins(storageKey),
+    loadCheckins(storageKey, legacyScopedDeviceKey(CHECKIN_KEY, state.info)),
   );
   const [query, setQuery] = useState('');
   const [onlyPending, setOnlyPending] = useState(false);

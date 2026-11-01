@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase, cloudEnabled } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { cloudEnabled } from '../lib/config';
 import { navigateTo } from '../lib/route';
 
 function japaneseError(error: { message: string }): string {

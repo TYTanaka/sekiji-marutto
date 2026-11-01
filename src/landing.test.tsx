@@ -2,6 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, cleanup } from '@testing-library/react'
 
 // 認証ページの分離を検証するため、クラウド有効・未ログインとして supabase を差し替える
+vi.mock('./lib/config', () => ({
+  cloudEnabled: true,
+  SUPABASE_URL: 'https://example.supabase.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+}))
+
 vi.mock('./lib/supabase', () => ({
   cloudEnabled: true,
   supabase: {
@@ -93,7 +99,8 @@ describe('画面分離（トップ/デモ/ログイン/本番）', () => {
   it('ログイン専用ページがURLで開ける', async () => {
     setHash('#/login')
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'ログイン' })).toBeTruthy()
+    // 認証ページは遅延読み込みされるため、表示を待つ
+    expect(await screen.findByRole('heading', { name: 'ログイン' })).toBeTruthy()
     expect(await screen.findByRole('link', { name: '新規登録' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'トップページへ戻る' })).toBeTruthy()
     // 認証フォームはこの専用ページにだけある
@@ -104,7 +111,7 @@ describe('画面分離（トップ/デモ/ログイン/本番）', () => {
   it('新規登録専用ページがURLで開ける', async () => {
     setHash('#/signup')
     render(<App />)
-    expect(screen.getByRole('heading', { name: '新規登録' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: '新規登録' })).toBeTruthy()
     expect(await screen.findByRole('link', { name: 'ログイン' })).toBeTruthy()
   })
 })

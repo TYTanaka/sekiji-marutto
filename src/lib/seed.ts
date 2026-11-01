@@ -1,5 +1,6 @@
 import type { AppState } from '../types';
 import { createDefaultTasks } from './tasks';
+import { newLocalId } from './tokens';
 
 /**
  * 新規ユーザーの本番データの初期状態。
@@ -9,6 +10,7 @@ import { createDefaultTasks } from './tasks';
 export function createEmptyState(): AppState {
   return {
     version: 2,
+    localId: newLocalId(),
     info: {
       groomName: '',
       brideName: '',
@@ -31,6 +33,7 @@ export function createEmptyState(): AppState {
 export function createSeedState(): AppState {
   return {
     version: 2,
+    localId: newLocalId(),
     info: {
       groomName: '佐藤 健太',
       brideName: '鈴木 美咲',

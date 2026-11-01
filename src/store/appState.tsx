@@ -21,7 +21,7 @@ import type {
 import { createSeedState } from '../lib/seed';
 import { validateAssignment } from '../lib/seating';
 import { createDefaultTasks } from '../lib/tasks';
-import { newInviteToken } from '../lib/supabase';
+import { newInviteToken, newLocalId } from '../lib/tokens';
 import { diffGuests, type ChangeEvent } from '../lib/changes';
 
 export type Action =
@@ -39,6 +39,7 @@ export type Action =
   | { type: 'addTask'; task: PrepTask }
   | { type: 'toggleTask'; taskId: string }
   | { type: 'removeTask'; taskId: string }
+  | { type: 'moveTask'; taskId: string; direction: -1 | 1 }
   | { type: 'hydrate'; state: AppState };
 
 const STORAGE_KEY = 'sekiji-state-v2';
@@ -179,6 +180,14 @@ export function reducer(state: AppState, action: Action): AppState {
       };
     case 'removeTask':
       return { ...state, tasks: state.tasks.filter((t) => t.id !== action.taskId) };
+    case 'moveTask': {
+      const index = state.tasks.findIndex((t) => t.id === action.taskId);
+      const target = index + action.direction;
+      if (index < 0 || target < 0 || target >= state.tasks.length) return state;
+      const tasks = [...state.tasks];
+      [tasks[index], tasks[target]] = [tasks[target], tasks[index]];
+      return { ...state, tasks };
+    }
     case 'hydrate':
       if (action.state.version !== 2) return state;
       return normalizeState(action.state);
@@ -296,7 +305,10 @@ export function normalizeState(state: AppState): AppState {
   };
 
   const tasks = Array.isArray(state.tasks) ? state.tasks : createDefaultTasks(info.date);
-  return { ...state, guests, tables, assignments, info, tasks };
+  // 式の不変ID：無ければここで確定させる（以降は表示情報を編集しても変わらない）
+  const localId =
+    typeof state.localId === 'string' && state.localId ? state.localId : newLocalId();
+  return { ...state, localId, guests, tables, assignments, info, tasks };
 }
 
 export function loadInitialState(): AppState {

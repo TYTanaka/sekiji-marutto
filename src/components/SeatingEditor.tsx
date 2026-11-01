@@ -468,6 +468,11 @@ export function SeatingEditor() {
         return (
           <div className="card etiquette-panel">
             <h3>作法チェック</h3>
+            {notes.length > 0 && (
+              <p className="muted">
+                {`全${notes.length}件（要確認 ${notes.filter((n) => n.level === 'warn').length}件／確認 ${notes.filter((n) => n.level === 'check').length}件）`}
+              </p>
+            )}
             {notes.length === 0 ? (
               <p className="muted">
                 {unassigned.length > 0

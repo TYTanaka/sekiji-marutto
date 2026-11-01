@@ -71,10 +71,10 @@ export function Dashboard({ onShowPending, onShowPrint }: { onShowPending?: () =
   // 初期設定カード： まだサンプルの式情報のままなら、自分の式で始める導線を出す
   const isSampleInfo =
     state.info.groomName === SAMPLE_GROOM && state.info.brideName === SAMPLE_BRIDE;
-  const setupKey = scopedDeviceKey(SETUP_DONE_KEY, state.info);
+  const setupKey = scopedDeviceKey(SETUP_DONE_KEY, state);
   const [setupDone, setSetupDone] = useState<boolean>(() => {
     try {
-      return localStorage.getItem(scopedDeviceKey(SETUP_DONE_KEY, state.info)) === '1';
+      return localStorage.getItem(scopedDeviceKey(SETUP_DONE_KEY, state)) === '1';
     } catch {
       return false;
     }

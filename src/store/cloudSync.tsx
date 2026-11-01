@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase, cloudEnabled, fetchOpens, newInviteToken } from '../lib/supabase';
+import { cloudEnabled } from '../lib/config';
+import { newInviteToken } from '../lib/tokens';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { fetchOpens as FetchOpensFn } from '../lib/supabase';
 import { useAppState } from './appState';
 import { createEmptyState, createSeedState } from '../lib/seed';
 import type { AppState } from '../types';
@@ -29,14 +32,29 @@ export function CloudSync() {
   const [importPrompt, setImportPrompt] = useState(false);
   const pendingUserRef = useRef<string | null>(null);
   const [importBusy, setImportBusy] = useState(false);
+  // Supabase クライアントは初期表示のバンドルから分離し、必要になった時点で読み込む
+  const [client, setClient] = useState<SupabaseClient | null>(null);
+  const fetchOpensRef = useRef<typeof FetchOpensFn | null>(null);
+
+  useEffect(() => {
+    if (!cloudEnabled) return;
+    let active = true;
+    void import('../lib/supabase').then((m) => {
+      if (!active) return;
+      fetchOpensRef.current = m.fetchOpens;
+      setClient(m.supabase);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
   useEffect(() => {
-    if (!cloudEnabled || !supabase) return;
-    const client = supabase;
+    if (!cloudEnabled || !client) return;
     let disposed = false;
     let generation = 0;
     let activeUserId: string | null = null;
@@ -80,7 +98,7 @@ export function CloudSync() {
         dispatch({ type: 'hydrate', state: row.state as AppState });
         setRowId(row.id);
         reportCloud('synced');
-        void fetchOpens(row.id).then((result) => {
+        void fetchOpensRef.current?.(row.id).then((result) => {
           if (!disposed && request === generation) reportOpens(result);
         });
         return;
@@ -140,11 +158,10 @@ export function CloudSync() {
         saveTimerRef.current = null;
       }
     };
-  }, [dispatch, reportCloud, reportOpens, hadStoredData]);
+  }, [dispatch, reportCloud, reportOpens, hadStoredData, client]);
 
   useEffect(() => {
-    if (!cloudEnabled || !supabase || !rowId) return;
-    const client = supabase;
+    if (!cloudEnabled || !client || !rowId) return;
     let disposed = false;
     const channel = client
       .channel('weddings-' + rowId)
@@ -184,7 +201,7 @@ export function CloudSync() {
         },
         () => {
           if (disposed || rowIdRef.current !== rowId) return;
-          void fetchOpens(rowId).then((result) => {
+          void fetchOpensRef.current?.(rowId).then((result) => {
             if (!disposed) reportOpens(result);
           });
         },
@@ -196,11 +213,10 @@ export function CloudSync() {
       void client.removeChannel(channel);
       void client.removeChannel(opensChannel);
     };
-  }, [rowId, dispatch, reportOpens]);
+  }, [rowId, dispatch, reportOpens, client]);
 
   useEffect(() => {
-    if (!cloudEnabled || !supabase || !rowIdRef.current) return;
-    const client = supabase;
+    if (!cloudEnabled || !client || !rowIdRef.current) return;
     const targetId = rowIdRef.current;
     const json = JSON.stringify(state);
     if (json === lastWrittenRef.current) return;
@@ -234,11 +250,11 @@ export function CloudSync() {
         saveTimerRef.current = null;
       }
     };
-  }, [state, rowId, reportCloud]);
+  }, [state, rowId, reportCloud, client]);
 
   async function createRowWith(initial: AppState): Promise<boolean> {
-    if (!supabase || !pendingUserRef.current) return false;
-    const { data: inserted, error } = await supabase
+    if (!client || !pendingUserRef.current) return false;
+    const { data: inserted, error } = await client
       .from('weddings')
       .insert({ owner_id: pendingUserRef.current, state: initial })
       .select('id')

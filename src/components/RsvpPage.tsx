@@ -302,7 +302,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
           </div>
           <div className="field">
             <label htmlFor="rsvp-memo">メッセージ</label>
-            <input id="rsvp-memo" className="input" value={memo} onChange={(event) => setMemo(event.target.value)} />
+            <textarea id="rsvp-memo" className="input" rows={3} value={memo} onChange={(event) => setMemo(event.target.value)} />
           </div>
         </fieldset>
         {error && <p role="alert">{error}</p>}

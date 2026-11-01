@@ -13,13 +13,13 @@ import {
 } from '../lib/submission';
 import { buildGuestsCsv, buildSeatingCsv, downloadCsv } from '../lib/csv';
 import { summarize } from '../lib/stats';
-import { scopedDeviceKey } from '../lib/deviceKeys';
+import { scopedDeviceKey, legacyScopedDeviceKey } from '../lib/deviceKeys';
 
 const SUBMISSION_KEY = 'sekiji-submission-v1';
 
-function loadSnapshot(key: string): SubmissionSnapshot | null {
+function loadSnapshot(key: string, legacyKey: string): SubmissionSnapshot | null {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = localStorage.getItem(key) ?? localStorage.getItem(legacyKey);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
       if (
@@ -51,10 +51,10 @@ export function PrintView() {
   const sum = summarize(state);
   const unassigned = unassignedAttending(state);
   // 提出スナップショットは式ごとに端末内キーを分離する
-  const storageKey = scopedDeviceKey(SUBMISSION_KEY, state.info);
+  const storageKey = scopedDeviceKey(SUBMISSION_KEY, state);
   const [mode, setMode] = useState<'chart' | 'pack'>('chart');
   const [snapshot, setSnapshot] = useState<SubmissionSnapshot | null>(() =>
-    loadSnapshot(storageKey),
+    loadSnapshot(storageKey, legacyScopedDeviceKey(SUBMISSION_KEY, state.info)),
   );
   const [confirmingRecord, setConfirmingRecord] = useState(false);
 

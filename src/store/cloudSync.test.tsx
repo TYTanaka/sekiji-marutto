@@ -8,6 +8,18 @@ const h = vi.hoisted(() => ({
   session: null as null | { user: { id: string; email: string } },
 }))
 
+vi.mock('../lib/config', () => ({
+  cloudEnabled: true,
+  SUPABASE_URL: 'https://example.supabase.co',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+}))
+
+vi.mock('../lib/tokens', () => ({
+  newInviteToken: () =>
+    'inv-new' + Math.random().toString(36).slice(2, 10),
+  newLocalId: () => 'test-local-id',
+}))
+
 vi.mock('../lib/supabase', () => {
   const channelObj: Record<string, unknown> = {}
   channelObj.on = () => channelObj

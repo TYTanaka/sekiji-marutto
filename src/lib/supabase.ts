@@ -1,12 +1,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { SUPABASE_URL, SUPABASE_ANON_KEY, cloudEnabled } from './config'
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
-
-export const cloudEnabled: boolean = Boolean(url && anonKey)
+export { cloudEnabled }
 
 export const supabase: SupabaseClient | null = cloudEnabled
-  ? createClient(url!, anonKey!)
+  ? createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!)
   : null
 
 export interface InvitationData {
@@ -89,19 +87,4 @@ export async function fetchOpens(
   } catch {
     return {}
   }
-}
-
-export function newInviteToken(): string {
-  const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789'
-  let token = 'inv-'
-
-  // 招待トークンは認証の代わりになるため、予測可能な乱数にはフォールバックしない
-  const values = new Uint32Array(12)
-  globalThis.crypto.getRandomValues(values)
-
-  for (const value of values) {
-    token += alphabet.charAt(value % alphabet.length)
-  }
-
-  return token
 }

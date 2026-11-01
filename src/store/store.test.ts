@@ -27,6 +27,13 @@ describe('reducer', () => {
     expect(next.assignments['g2']).toBeUndefined()
     expect(next.guests.some((g) => g.id === 'g2')).toBe(false)
   })
+  it('moveTask swaps tasks and stops at the edges', () => {
+    const first = s.tasks[0]
+    const moved = reducer(s, { type: 'moveTask', taskId: first.id, direction: 1 })
+    expect(moved.tasks[1].id).toBe(first.id)
+    const atTop = reducer(s, { type: 'moveTask', taskId: first.id, direction: -1 })
+    expect(atTop).toBe(s)
+  })
 })
 
 describe('hydrate', () => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase, cloudEnabled } from '../lib/supabase';
+import { cloudEnabled } from '../lib/config';
 import heroUrl from '../assets/hero.webp';
 
 const features = [
@@ -26,17 +26,23 @@ export function Landing() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!cloudEnabled || !supabase) return;
+    if (!cloudEnabled) return;
     let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (active) setSessionEmail(data.session?.user.email ?? null);
-    });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setSessionEmail(session?.user.email ?? null);
+    let unsubscribe: (() => void) | undefined;
+    // Supabase クライアントは初期表示に不要なため遅延読み込みする
+    void import('../lib/supabase').then(({ supabase }) => {
+      if (!active || !supabase) return;
+      void supabase.auth.getSession().then(({ data }) => {
+        if (active) setSessionEmail(data.session?.user.email ?? null);
+      });
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (active) setSessionEmail(session?.user.email ?? null);
+      });
+      unsubscribe = () => subscription.unsubscribe();
     });
     return () => {
       active = false;
-      subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 

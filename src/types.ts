@@ -48,6 +48,8 @@ export interface PrepTask {
 
 export interface AppState {
   version: number;
+  /** 端末内キーの分離に使う、その式のための不変ID（表示情報の編集では変わらない） */
+  localId?: string;
   guests: Guest[];
   tables: TableDef[];
   assignments: Assignments;
