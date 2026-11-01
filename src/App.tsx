@@ -81,6 +81,22 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
   const bannerOpen = bannerOverride ?? view === 'dashboard';
   const panelRef = useRef<HTMLDivElement | null>(null);
 
+  // デモの招待状タブから開く「ゲスト画面の見本」プレビュー（本番リンクは発行しない）
+  const [rsvpPreview, setRsvpPreview] = useState(false);
+  const sampleGuest = demo
+    ? (state.guests.find((g) => g.name === '高橋 誠') ?? state.guests[0])
+    : undefined;
+
+  useEffect(() => {
+    if (rsvpPreview) window.scrollTo(0, 0);
+  }, [rsvpPreview]);
+
+  // 画面遷移はこの関数を経由し、ゲスト画面プレビューは招待状タブを離れたら閉じる
+  function changeView(next: View) {
+    setRsvpPreview(false);
+    setView(next);
+  }
+
   // 画面を切り替えたら常に一番上から表示し、フォーカスも画面の先頭へ移す
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -176,7 +192,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
   }
 
   function selectView(next: View) {
-    setView(next);
+    changeView(next);
     setMoreOpen(false);
   }
 
@@ -217,7 +233,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
               role="tab"
               aria-selected={view === tab.view}
               aria-controls="active-view"
-              onClick={() => setView(tab.view)}
+              onClick={() => changeView(tab.view)}
             >
               {tab.label}
             </button>
@@ -291,13 +307,22 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
         >
           {view === 'dashboard' && (
             <Dashboard
-              onShowPending={() => { setView('guests'); setFocusPending((n) => n + 1); }}
-              onShowPrint={() => setView('print')}
+              onShowPending={() => { changeView('guests'); setFocusPending((n) => n + 1); }}
+              onShowPrint={() => changeView('print')}
             />
           )}
           {view === 'guests' && <GuestManager focusPendingSignal={focusPending} />}
           {view === 'seating' && <SeatingEditor />}
-          {view === 'invitation' && demo && (
+          {view === 'invitation' && demo && rsvpPreview && sampleGuest && (
+            <Suspense fallback={<ViewLoading />}>
+              <RsvpPage
+                token={sampleGuest.inviteToken}
+                demoGuestId={sampleGuest.id}
+                onClose={() => setRsvpPreview(false)}
+              />
+            </Suspense>
+          )}
+          {view === 'invitation' && demo && !(rsvpPreview && sampleGuest) && (
             <>
               <section className="card">
                 <h2>招待リンクについて（デモ）</h2>
@@ -323,6 +348,20 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                     見本です。実際にはゲストごとに違うURLとQRコードが発行され、開封したかどうかも分かります。
                   </p>
                 </div>
+                {sampleGuest && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => setRsvpPreview(true)}
+                    >
+                      ゲスト画面を見てみる
+                    </button>
+                    <p className="muted">
+                      見本の回答ページを開いて、実際に出欠を回答するところまで試せます。送信されることはなく、デモの中だけで反映されます。
+                    </p>
+                  </>
+                )}
               </section>
               <Invitation />
             </>

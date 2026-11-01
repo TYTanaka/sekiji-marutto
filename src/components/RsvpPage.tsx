@@ -10,7 +10,34 @@ import heroUrl from '../assets/hero.webp';
 
 type RsvpPageProps = {
   token: string;
+  /**
+   * デモ内の見本プレビュー用：指定されたゲストをストアから直接読み、
+   * クラウド（ネットワーク）には一切アクセスしない。本番リンクは発行しない。
+   */
+  demoGuestId?: string;
+  /** デモ内プレビューの「デモに戻る」 */
+  onClose?: () => void;
 };
+
+/**
+ * デモ内プレビューの見本であることを示す案内。
+ * 回答しても実際には送信されず、デモの中だけで反映されることを明示する。
+ */
+function DemoSampleNotice({ onClose }: { onClose?: () => void }) {
+  return (
+    <section className="demo-rsvp-notice" aria-label="ゲスト画面の見本について">
+      <p>
+        <span className="demo-rsvp-chip">ゲスト画面の見本（デモ）</span>
+        実際のゲストに表示される回答ページの見本です。ここで回答しても実際には送信されず、デモの中だけで反映されます。
+      </p>
+      {onClose && (
+        <button type="button" className="btn btn-ghost" onClick={onClose}>
+          デモに戻る
+        </button>
+      )}
+    </section>
+  );
+}
 
 /**
  * ゲストへの小さなクレジット表記。
@@ -48,7 +75,8 @@ function formatJapaneseDate(value: string): string {
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${weekdays[date.getDay()]}）`;
 }
 
-export default function RsvpPage({ token }: RsvpPageProps) {
+export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps) {
+  const demoPreview = demoGuestId !== undefined;
   const { state, dispatch } = useAppState();
   const [invitation, setInvitation] = useState<InvitationData | null>(null);
   const [status, setStatus] = useState<PageStatus>('loading');
@@ -63,13 +91,15 @@ export default function RsvpPage({ token }: RsvpPageProps) {
 
   const stateRef = useRef(state);
   stateRef.current = state;
-  const loadedTokenRef = useRef<string | null>(null);
+  const loadedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     // Load once per token. Re-running on every state.guests change would wipe
     // the form mid-typing and bounce a just-submitted guest back to the form.
-    if (loadedTokenRef.current === token) return;
-    loadedTokenRef.current = token;
+    // デモ見本ではキーにゲストIDを使い、読み込みもストア内で完結させる。
+    const loadKey = demoGuestId !== undefined ? `demo:${demoGuestId}` : token;
+    if (loadedKeyRef.current === loadKey) return;
+    loadedKeyRef.current = loadKey;
     let cancelled = false;
     setStatus('loading');
     setInvitation(null);
@@ -79,6 +109,39 @@ export default function RsvpPage({ token }: RsvpPageProps) {
     setMemo('');
     setError('');
     setSubmitting(false);
+
+    if (demoGuestId !== undefined) {
+      // デモの見本：本番リンクは発行せず、デモ用ストアのゲストから組み立てる。
+      // クラウド（ネットワーク）には一切アクセスしない。開封記録も残さない。
+      const current = stateRef.current;
+      const demoGuest = current.guests.find((item) => item.id === demoGuestId);
+      if (!demoGuest) {
+        setStatus('notFound');
+        return;
+      }
+      const assignment = current.assignments[demoGuest.id];
+      const table = assignment
+        ? current.tables.find((t) => t.id === assignment.tableId)
+        : undefined;
+      const data: InvitationData = {
+        info: current.info,
+        guest: demoGuest,
+        seat:
+          table && assignment
+            ? { tableName: table.name, seatIndex: assignment.seatIndex }
+            : null,
+      };
+      setInvitation(data);
+      if (data.guest.rsvp === 'attending' || data.guest.rsvp === 'declined') {
+        setAlreadyAnswered(true);
+        setChoice(data.guest.rsvp);
+        setCompanions(data.guest.companions ?? 0);
+        setAllergy(data.guest.allergy ?? '');
+        setMemo(data.guest.memo ?? '');
+      }
+      setStatus('ready');
+      return;
+    }
 
     async function load() {
       try {
@@ -137,7 +200,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, demoGuestId]);
 
   async function handleSubmit() {
     if (!invitation || choice === null || submitting) return;
@@ -146,7 +209,25 @@ export default function RsvpPage({ token }: RsvpPageProps) {
     const companionCount = choice === 'attending' ? companions : 0;
 
     try {
-      if (cloudEnabled) {
+      if (demoGuestId !== undefined) {
+        // デモの見本：送信はせず、デモ用ストアの中だけで回答を反映する
+        // （戻るとゲスト一覧・席次で連動を確認できる。本番データには触れない）。
+        const fullGuest = state.guests.find((item) => item.id === demoGuestId);
+        if (!fullGuest) {
+          setError('送信に失敗しました。時間をおいて再度お試しください。');
+          return;
+        }
+        dispatch({
+          type: 'updateGuest',
+          guest: {
+            ...fullGuest,
+            rsvp: choice,
+            companions: companionCount,
+            allergy,
+            memo,
+          },
+        });
+      } else if (cloudEnabled) {
         const success = await submitRsvpCloud(
           token,
           choice,
@@ -187,6 +268,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
   if (status === 'submitted' && summary) {
     return (
       <main className="rsvp-page">
+        {demoPreview && <DemoSampleNotice onClose={onClose} />}
         <section className="card rsvp-summary" role="status" aria-live="polite">
           <h2 className="rsvp-title">回答を受け付けました</h2>
           <p>ありがとうございました。以下の内容で承っています。</p>
@@ -202,6 +284,11 @@ export default function RsvpPage({ token }: RsvpPageProps) {
           <button type="button" className="btn btn-primary" onClick={() => setStatus('ready')}>
             回答を変更する
           </button>
+          {demoPreview && invitation && (
+            <p className="muted">
+              ゲスト「{invitation.guest.name}」さんの回答がデモに反映されました。「デモに戻る」から「ゲスト・出欠」で確認できます。
+            </p>
+          )}
           <ServiceCredit />
         </section>
       </main>
@@ -215,6 +302,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
         : '招待が見つかりませんでした。リンクをご確認ください。';
     return (
       <main className="rsvp-page">
+        {demoPreview && <DemoSampleNotice onClose={onClose} />}
         <section className="card" role="status" aria-live="polite">
           <p>{text}</p>
         </section>
@@ -226,6 +314,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
 
   return (
     <main className="rsvp-page">
+      {demoPreview && <DemoSampleNotice onClose={onClose} />}
       <section className="invitation" aria-labelledby="invitation-title">
         <img className="hero-img" src={heroUrl} alt="" aria-hidden="true" />
         <p className="inv-kicker">Wedding Invitation</p>
