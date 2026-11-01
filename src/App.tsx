@@ -3,6 +3,7 @@ import { AppStateProvider, useAppState } from './store/appState';
 import { supabase, cloudEnabled } from './lib/supabase';
 import { parseRoute, navigateTo, type Route } from './lib/route';
 import { clearDeviceScopedKeys } from './lib/deviceKeys';
+import { loadAnalytics, trackPageView } from './lib/analytics';
 import { Landing } from './components/Landing';
 import { AuthPage } from './components/AuthPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -132,6 +133,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
 
   const [pendingBackup, setPendingBackup] = useState<AppState | null>(null);
   const [backupError, setBackupError] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
   const backupFileRef = useRef<HTMLInputElement | null>(null);
 
   async function handleBackupFile(file: File) {
@@ -485,6 +487,48 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                     </div>
                   )}
                 </div>
+                {!demo && (
+                  <div className="share-zone">
+                    <h3>このツールを紹介する</h3>
+                    <p className="muted">
+                      結婚式の準備をしている友人がいたら、ぜひ教えてあげてください。出欠の回答がそのまま席次表になる、無料の準備ツールです。
+                    </p>
+                    <div className="share-actions">
+                      <a
+                        className="btn btn-ghost"
+                        target="_blank"
+                        rel="noreferrer"
+                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('結婚式準備に使っている「席次まるっと」。出欠の回答がそのまま席次表になって、席も自動で提案してくれます。無料で使えます💒')}&url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}#/?utm_source=share_x`)}`}
+                      >
+                        Xで紹介する
+                      </a>
+                      <a
+                        className="btn btn-ghost"
+                        target="_blank"
+                        rel="noreferrer"
+                        href={`https://line.me/R/msg/text/?${encodeURIComponent(`結婚式準備に使っている「席次まるっと」。出欠がそのまま席次表になります。無料で使えます💒\n${window.location.origin}${window.location.pathname}#/?utm_source=share_line`)}`}
+                      >
+                        LINEで送る
+                      </a>
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => {
+                          const url = `${window.location.origin}${window.location.pathname}#/`;
+                          void navigator.clipboard
+                            ?.writeText(url)
+                            .then(() => {
+                              setShareCopied(true);
+                              window.setTimeout(() => setShareCopied(false), 2500);
+                            })
+                            .catch(() => undefined);
+                        }}
+                      >
+                        {shareCopied ? 'コピーしました' : 'リンクをコピー'}
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="danger-zone">
                   <h3>データの初期化</h3>
                   <p className="muted">
@@ -646,6 +690,8 @@ export default function App() {
 
   useEffect(() => {
     document.title = ROUTE_TITLES[route.name];
+    loadAnalytics();
+    trackPageView();
   }, [route.name]);
 
   let content: React.ReactNode;

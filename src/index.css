@@ -1272,6 +1272,12 @@ button:not([class]):hover { background: var(--rose-soft); }
 .demo-banner p { margin: 0 0 10px; line-height: 1.8; font-size: .92rem; }
 .demo-banner-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .demo-banner-actions .btn, .demo-banner-actions .btn-primary, .demo-banner-actions .btn-ghost { text-decoration: none; }
+.service-credit {
+  margin-top: 18px; text-align: center; font-size: .8rem; color: var(--muted, #77636C);
+}
+.service-credit a { color: inherit; font-weight: 700; }
+.share-zone { margin-top: 28px; }
+.share-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .demo-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   border: 1px dashed var(--rose, #b76e79); border-radius: 999px;

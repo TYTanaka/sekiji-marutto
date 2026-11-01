@@ -12,6 +12,23 @@ type RsvpPageProps = {
   token: string;
 };
 
+/**
+ * ゲストへの小さなクレジット表記。
+ * 招待リンクを開くゲスト（将来のカップルを含む）への控えめな案内として置く。
+ */
+export function ServiceCredit() {
+  const href = `${window.location.origin}${window.location.pathname}#/?utm_source=guest_credit`;
+  return (
+    <p className="service-credit">
+      この招待状は
+      <a href={href} target="_blank" rel="noreferrer">
+        席次まるっと
+      </a>
+      で作られました（結婚式準備が無料でできます）
+    </p>
+  );
+}
+
 type Choice = 'attending' | 'declined';
 type PageStatus = 'loading' | 'notFound' | 'ready' | 'submitted';
 
@@ -185,6 +202,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
           <button type="button" className="btn btn-primary" onClick={() => setStatus('ready')}>
             回答を変更する
           </button>
+          <ServiceCredit />
         </section>
       </main>
     );
@@ -292,6 +310,7 @@ export default function RsvpPage({ token }: RsvpPageProps) {
           {submitting ? '送信中…' : '送信する'}
         </button>
       </form>
+      <ServiceCredit />
     </main>
   );
 }
