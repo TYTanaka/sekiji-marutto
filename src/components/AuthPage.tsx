@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { cloudEnabled } from '../lib/config';
 import { navigateTo } from '../lib/route';
+import { SiteFooter } from './SiteFooter';
 
 function japaneseError(error: { message: string }): string {
   if (/invalid login credentials|invalid credentials/i.test(error.message)) {
@@ -156,6 +157,13 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
                       {busy ? '処理中…' : isLogin ? 'ログイン' : '新規登録'}
                     </button>
                   </div>
+                  {!isLogin && (
+                    <p className="auth-consent">
+                      登録することで、<a href="#/terms">利用規約</a>と
+                      <a href="#/privacy">プライバシーポリシー</a>
+                      に同意したものとみなします。
+                    </p>
+                  )}
                 </fieldset>
               </form>
               {error && <p role="alert">{error}</p>}
@@ -177,6 +185,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
           </p>
         </div>
       </section>
+      <SiteFooter />
     </main>
   );
 }

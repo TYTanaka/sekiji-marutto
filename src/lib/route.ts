@@ -9,6 +9,8 @@ export type Route =
   | { name: 'login' }
   | { name: 'signup' }
   | { name: 'app' }
+  | { name: 'privacy' }
+  | { name: 'terms' }
   | { name: 'rsvp'; token: string };
 
 export function parseRoute(hash: string): Route {
@@ -25,6 +27,10 @@ export function parseRoute(hash: string): Route {
       return { name: 'signup' };
     case '#/app':
       return { name: 'app' };
+    case '#/privacy':
+      return { name: 'privacy' };
+    case '#/terms':
+      return { name: 'terms' };
     default:
       return { name: 'top' };
   }

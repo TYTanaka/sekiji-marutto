@@ -8,6 +8,12 @@ import { Landing } from './components/Landing';
 const AuthPage = lazy(() =>
   import('./components/AuthPage').then((m) => ({ default: m.AuthPage })),
 );
+const PrivacyPage = lazy(() =>
+  import('./components/LegalPages').then((m) => ({ default: m.PrivacyPage })),
+);
+const TermsPage = lazy(() =>
+  import('./components/LegalPages').then((m) => ({ default: m.TermsPage })),
+);
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Dashboard } from './components/Dashboard';
 import { GuestManager } from './components/GuestManager';
@@ -742,6 +748,8 @@ const ROUTE_TITLES: Record<Route['name'], string> = {
   login: 'ログイン | 席次まるっと',
   signup: '新規登録 | 席次まるっと',
   app: '管理画面 | 席次まるっと',
+  privacy: 'プライバシーポリシー | 席次まるっと',
+  terms: '利用規約 | 席次まるっと',
   rsvp: 'ご招待 | 席次まるっと',
 };
 
@@ -786,6 +794,20 @@ export default function App() {
       break;
     case 'app':
       content = <AppGate />;
+      break;
+    case 'privacy':
+      content = (
+        <Suspense fallback={<ViewLoading />}>
+          <PrivacyPage />
+        </Suspense>
+      );
+      break;
+    case 'terms':
+      content = (
+        <Suspense fallback={<ViewLoading />}>
+          <TermsPage />
+        </Suspense>
+      );
       break;
     default:
       content = <Landing />;

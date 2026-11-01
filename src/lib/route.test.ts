@@ -16,6 +16,11 @@ describe('parseRoute', () => {
     expect(parseRoute('#/app')).toEqual({ name: 'app' });
   });
 
+  it('法務ページをURLで識別できる', () => {
+    expect(parseRoute('#/privacy')).toEqual({ name: 'privacy' });
+    expect(parseRoute('#/terms')).toEqual({ name: 'terms' });
+  });
+
   it('既存のゲスト回答リンクを維持する', () => {
     expect(parseRoute('#/rsvp/inv-1gx8qe64')).toEqual({
       name: 'rsvp',

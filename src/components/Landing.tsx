@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { cloudEnabled } from '../lib/config';
+import { SiteFooter } from './SiteFooter';
 import heroUrl from '../assets/hero.webp';
 
 const features = [
@@ -110,6 +111,7 @@ export function Landing() {
           </p>
         </div>
       </section>
+      <SiteFooter />
     </main>
   );
 }
