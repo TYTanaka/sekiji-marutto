@@ -88,6 +88,39 @@ describe('画面分離（トップ/デモ/ログイン/本番）', () => {
     expect(localStorage.getItem('sekiji-state-v2')).toBeNull()
   })
 
+  it('デモバナーは概要で展開・他画面でスリムが初期状態になり、手動切替が優先される', () => {
+    setHash('#/demo')
+    render(<App />)
+    // 概要では説明パネルが展開されている
+    expect(screen.getByText(/再読み込みすると元のサンプルに戻ります/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: '小さく表示' })).toBeTruthy()
+
+    // ゲスト画面へ移動するとスリムバーになる
+    fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
+    expect(screen.queryByText(/再読み込みすると元のサンプルに戻ります/)).toBeNull()
+    expect(screen.getByText(/デモ：架空のサンプルデータ（保存されません）/)).toBeTruthy()
+
+    // 招待状でもスリムのまま、概要に戻ると再び展開される
+    fireEvent.click(screen.getByRole('tab', { name: '招待状' }))
+    expect(screen.queryByText(/再読み込みすると元のサンプルに戻ります/)).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: '概要' }))
+    expect(screen.getByText(/再読み込みすると元のサンプルに戻ります/)).toBeTruthy()
+
+    // 概要で手動で畳むと、画面を往復してもスリムのまま
+    fireEvent.click(screen.getByRole('button', { name: '小さく表示' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
+    fireEvent.click(screen.getByRole('tab', { name: '概要' }))
+    expect(screen.queryByText(/再読み込みすると元のサンプルに戻ります/)).toBeNull()
+    expect(screen.getByText(/デモ：架空のサンプルデータ（保存されません）/)).toBeTruthy()
+
+    // スリムな画面で手動で広げると、画面を移動しても展開のまま
+    fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
+    fireEvent.click(screen.getByRole('button', { name: '詳しく' }))
+    expect(screen.getByText(/再読み込みすると元のサンプルに戻ります/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: '招待状' }))
+    expect(screen.getByText(/再読み込みすると元のサンプルに戻ります/)).toBeTruthy()
+  })
+
   it('デモの招待状タブでは招待リンクを発行しない', () => {
     setHash('#/demo')
     render(<App />)

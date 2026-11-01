@@ -75,7 +75,10 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
 
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
-  const [bannerOpen, setBannerOpen] = useState(true);
+  // デモバナーの開閉：未操作時は画面に従う（概要=展開、その他=スリム）。
+  // 一度手動で切り替えたら、その選択がデモ中ずっと優先される。
+  const [bannerOverride, setBannerOverride] = useState<boolean | null>(null);
+  const bannerOpen = bannerOverride ?? view === 'dashboard';
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   // 画面を切り替えたら常に一番上から表示し、フォーカスも画面の先頭へ移す
@@ -257,7 +260,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
               <a className="btn btn-primary" href="#/signup">
                 新規登録して利用を始める
               </a>
-              <button type="button" className="btn btn-ghost" onClick={() => setBannerOpen(false)}>
+              <button type="button" className="btn btn-ghost" onClick={() => setBannerOverride(false)}>
                 小さく表示
               </button>
             </div>
@@ -270,7 +273,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
               <button type="button" className="btn-ghost demo-bar-btn" onClick={resetDemo}>
                 元に戻す
               </button>
-              <button type="button" className="btn-ghost demo-bar-btn" onClick={() => setBannerOpen(true)}>
+              <button type="button" className="btn-ghost demo-bar-btn" onClick={() => setBannerOverride(true)}>
                 詳しく
               </button>
               <a className="btn-ghost demo-bar-btn" href="#/">
