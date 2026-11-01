@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase, cloudEnabled, fetchOpens } from '../lib/supabase';
+import { supabase, cloudEnabled, fetchOpens, newInviteToken } from '../lib/supabase';
 import { useAppState } from './appState';
-import { createEmptyState } from '../lib/seed';
+import { createEmptyState, createSeedState } from '../lib/seed';
 import type { AppState } from '../types';
+
+/** サンプルデータに含まれる招待トークン（公開ソースに載っている固定値） */
+const SEED_TOKENS: ReadonlySet<string> = new Set(
+  createSeedState().guests.map((g) => g.inviteToken),
+);
 
 const LEGACY_BACKUP_KEY = 'sekiji-legacy-backup-v1';
 const STORAGE_KEY = 'sekiji-state-v2';
@@ -251,8 +256,19 @@ export function CloudSync() {
     if (importBusy) return;
     setImportBusy(true);
     try {
-      const ok = await createRowWith(stateRef.current);
+      // サンプル由来の既知トークン（公開ソースに載る固定値・連番）は、本番投入の時点で再発行する
+      const current = stateRef.current;
+      const rotated: AppState = {
+        ...current,
+        guests: current.guests.map((g) =>
+          SEED_TOKENS.has(g.inviteToken) || /^inv-lg\d+$/.test(g.inviteToken)
+            ? { ...g, inviteToken: newInviteToken() }
+            : g,
+        ),
+      };
+      const ok = await createRowWith(rotated);
       if (ok) {
+        dispatch({ type: 'hydrate', state: rotated });
         pendingUserRef.current = null;
         setImportPrompt(false);
       }

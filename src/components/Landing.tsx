@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase, cloudEnabled } from '../lib/supabase';
-import heroUrl from '../assets/hero.jpg';
+import heroUrl from '../assets/hero.webp';
 
 const features = [
   {
@@ -51,6 +51,22 @@ export function Landing() {
             式場が決まった「あと」の準備は、紙の名簿・Excel・別々のツールに散らかりがちです。
             席次まるっとは、出欠の回答から席次表、印刷までをひとつの名簿でつなぐ、式場に依存しない準備アプリです。
           </p>
+
+          <div className="landing-cta">
+            <a className="btn-primary landing-cta-main" href="#/demo">
+              デモで試してみる
+            </a>
+            {cloudEnabled && sessionEmail ? (
+              <a className="btn-ghost" href="#/app">
+                管理画面を開く（ログイン中）
+              </a>
+            ) : cloudEnabled ? (
+              <>
+                <a className="btn-ghost" href="#/login">ログイン</a>
+                <a className="btn-ghost" href="#/signup">新規登録</a>
+              </>
+            ) : null}
+          </div>
 
           <div className="landing-features">
             {features.map((feature) => (

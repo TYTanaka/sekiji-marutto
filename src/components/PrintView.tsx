@@ -13,12 +13,13 @@ import {
 } from '../lib/submission';
 import { buildGuestsCsv, buildSeatingCsv, downloadCsv } from '../lib/csv';
 import { summarize } from '../lib/stats';
+import { scopedDeviceKey } from '../lib/deviceKeys';
 
 const SUBMISSION_KEY = 'sekiji-submission-v1';
 
-function loadSnapshot(): SubmissionSnapshot | null {
+function loadSnapshot(key: string): SubmissionSnapshot | null {
   try {
-    const raw = localStorage.getItem(SUBMISSION_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
       if (
@@ -49,15 +50,19 @@ export function PrintView() {
   const { groomName, brideName, date, venue } = state.info;
   const sum = summarize(state);
   const unassigned = unassignedAttending(state);
+  // 提出スナップショットは式ごとに端末内キーを分離する
+  const storageKey = scopedDeviceKey(SUBMISSION_KEY, state.info);
   const [mode, setMode] = useState<'chart' | 'pack'>('chart');
-  const [snapshot, setSnapshot] = useState<SubmissionSnapshot | null>(loadSnapshot);
+  const [snapshot, setSnapshot] = useState<SubmissionSnapshot | null>(() =>
+    loadSnapshot(storageKey),
+  );
   const [confirmingRecord, setConfirmingRecord] = useState(false);
 
   function recordSnapshot() {
     const next = takeSubmissionSnapshot(state);
     setSnapshot(next);
     try {
-      localStorage.setItem(SUBMISSION_KEY, JSON.stringify(next));
+      localStorage.setItem(storageKey, JSON.stringify(next));
     } catch {
       // Snapshot persistence is best-effort.
     }

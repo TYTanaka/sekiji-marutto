@@ -104,7 +104,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
     setShowForm(true);
   }
 
-  function saveGuest() {
+  function saveGuest(addAnother = false) {
     if (!draft.name.trim()) return;
 
     const values: GuestDraft = {
@@ -130,9 +130,21 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
       dispatch({ type: 'addGuest', guest: { ...values, id, inviteToken: newInviteToken() } });
     }
 
-    closeForm();
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2500);
+
+    if (addAnother && !editing) {
+      // 連続登録：側・グループは引き継ぎ、名前欄へフォーカスを戻す
+      setDraft({ ...createDraft(), side: values.side, group: values.group });
+      window.setTimeout(() => {
+        document
+          .querySelector<HTMLInputElement>('#guest-form input')
+          ?.focus();
+      }, 0);
+      return;
+    }
+
+    closeForm();
   }
 
   return (
@@ -264,6 +276,16 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
           <button type="submit" className="btn-primary" disabled={!draft.name.trim()}>
             保存
           </button>
+          {!editing && (
+            <button
+              type="button"
+              className="btn-ghost"
+              disabled={!draft.name.trim()}
+              onClick={() => saveGuest(true)}
+            >
+              保存して続けて追加
+            </button>
+          )}
           <button type="button" className="btn-ghost" onClick={closeForm}>
             キャンセル
           </button>

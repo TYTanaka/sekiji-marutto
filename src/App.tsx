@@ -1,20 +1,36 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AppStateProvider, useAppState } from './store/appState';
 import { supabase, cloudEnabled } from './lib/supabase';
 import { parseRoute, navigateTo, type Route } from './lib/route';
+import { clearDeviceScopedKeys } from './lib/deviceKeys';
 import { Landing } from './components/Landing';
 import { AuthPage } from './components/AuthPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Dashboard } from './components/Dashboard';
 import { GuestManager } from './components/GuestManager';
 import { SeatingEditor } from './components/SeatingEditor';
 import { Invitation } from './components/Invitation';
-import { InviteLinks } from './components/InviteLinks';
-import { PrintView } from './components/PrintView';
-import RsvpPage from './components/RsvpPage';
 import { CloudSync } from './store/cloudSync';
-import { TasksView } from './components/TasksView';
-import { CheckinView } from './components/CheckinView';
 import { UndoToast } from './components/UndoToast';
+
+// 重い画面はルート/タブ単位で分割し、必要なときにだけ読み込む
+const InviteLinks = lazy(() =>
+  import('./components/InviteLinks').then((m) => ({ default: m.InviteLinks })),
+);
+const PrintView = lazy(() =>
+  import('./components/PrintView').then((m) => ({ default: m.PrintView })),
+);
+const CheckinView = lazy(() =>
+  import('./components/CheckinView').then((m) => ({ default: m.CheckinView })),
+);
+const TasksView = lazy(() =>
+  import('./components/TasksView').then((m) => ({ default: m.TasksView })),
+);
+const RsvpPage = lazy(() => import('./components/RsvpPage'));
+
+function ViewLoading() {
+  return <p role="status">読み込んでいます…</p>;
+}
 import { createSeedState } from './lib/seed';
 import { createLargeSeedState } from './lib/seedLarge';
 import { downloadBackup, parseBackup } from './lib/backup';
@@ -56,10 +72,13 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
 
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [bannerOpen, setBannerOpen] = useState(true);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
-  // 画面を切り替えたら常に一番上から表示する（前の画面のスクロール位置を引き継がない）
+  // 画面を切り替えたら常に一番上から表示し、フォーカスも画面の先頭へ移す
   useEffect(() => {
     window.scrollTo(0, 0);
+    panelRef.current?.focus({ preventScroll: true });
   }, [view]);
 
   // 本番モードではヘッダーにログイン中アカウントを表示する（認証フォームは置かない）
@@ -81,6 +100,8 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
   async function logout() {
     if (!supabase) return;
     await supabase.auth.signOut();
+    // 端末に残る式単位の補助データ（受付チェック等）は次の利用者に見せない
+    clearDeviceScopedKeys();
     navigateTo('#/');
   }
 
@@ -208,7 +229,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
       </header>
 
       <main className="main">
-        {demo && (
+        {demo && bannerOpen && (
           <section className="demo-banner" aria-label="デモの案内">
             <p>
               <strong>デモ</strong>：架空のサンプルデータを使用しています。
@@ -225,15 +246,41 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
               <a className="btn btn-primary" href="#/signup">
                 新規登録して利用を始める
               </a>
+              <button type="button" className="btn btn-ghost" onClick={() => setBannerOpen(false)}>
+                小さく表示
+              </button>
             </div>
           </section>
+        )}
+        {demo && !bannerOpen && (
+          <div className="demo-bar" role="note">
+            <span>デモ：架空のサンプルデータ（保存されません）</span>
+            <span className="demo-bar-actions">
+              <button type="button" className="btn-ghost demo-bar-btn" onClick={resetDemo}>
+                元に戻す
+              </button>
+              <button type="button" className="btn-ghost demo-bar-btn" onClick={() => setBannerOpen(true)}>
+                詳しく
+              </button>
+              <a className="btn-ghost demo-bar-btn" href="#/">
+                終了
+              </a>
+            </span>
+          </div>
         )}
         <div
           id="active-view"
           role="tabpanel"
           aria-labelledby={`tab-${view}`}
+          ref={panelRef}
+          tabIndex={-1}
         >
-          {view === 'dashboard' && (<Dashboard onShowPending={() => { setView('guests'); setFocusPending((n) => n + 1); }} />)}
+          {view === 'dashboard' && (
+            <Dashboard
+              onShowPending={() => { setView('guests'); setFocusPending((n) => n + 1); }}
+              onShowPrint={() => setView('print')}
+            />
+          )}
           {view === 'guests' && <GuestManager focusPendingSignal={focusPending} />}
           {view === 'seating' && <SeatingEditor />}
           {view === 'invitation' && demo && (
@@ -245,14 +292,48 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                   登録・ログインすると、ゲストごとの本物の招待リンクを発行して送れるようになります。
                   招待状そのものの見た目は、下のプレビューで確認できます。
                 </p>
+                <h3>ゲスト別リンク一覧の見本</h3>
+                <div className="guest-row invite-row demo-sample-row">
+                  <div>
+                    <strong>高橋 誠</strong>{' '}
+                    <span className="badge attending">出席</span>
+                  </div>
+                  <input
+                    className="input"
+                    type="text"
+                    value="https://…/sekiji-marutto/#/rsvp/（ゲストごとの専用リンク）"
+                    readOnly
+                    aria-label="招待リンクの見本"
+                  />
+                  <p className="muted">
+                    見本です。実際にはゲストごとに違うURLとQRコードが発行され、開封したかどうかも分かります。
+                  </p>
+                </div>
               </section>
               <Invitation />
             </>
           )}
-          {view === 'invitation' && !demo && (<><InviteLinks /><Invitation /></>)}
-          {view === 'tasks' && <TasksView />}
-          {view === 'print' && <PrintView />}
-          {view === 'checkin' && <CheckinView />}
+          {view === 'invitation' && !demo && (
+            <Suspense fallback={<ViewLoading />}>
+              <InviteLinks />
+              <Invitation />
+            </Suspense>
+          )}
+          {view === 'tasks' && (
+            <Suspense fallback={<ViewLoading />}>
+              <TasksView />
+            </Suspense>
+          )}
+          {view === 'print' && (
+            <Suspense fallback={<ViewLoading />}>
+              <PrintView />
+            </Suspense>
+          )}
+          {view === 'checkin' && (
+            <Suspense fallback={<ViewLoading />}>
+              <CheckinView />
+            </Suspense>
+          )}
         </div>
 
         {view === 'settings' && (
@@ -551,27 +632,50 @@ function useRoute(): Route {
   return route;
 }
 
+const ROUTE_TITLES: Record<Route['name'], string> = {
+  top: '席次まるっと | ゲスト名簿・出欠・席次表',
+  demo: 'デモ | 席次まるっと',
+  login: 'ログイン | 席次まるっと',
+  signup: '新規登録 | 席次まるっと',
+  app: '管理画面 | 席次まるっと',
+  rsvp: 'ご招待 | 席次まるっと',
+};
+
 export default function App() {
   const route = useRoute();
 
+  useEffect(() => {
+    document.title = ROUTE_TITLES[route.name];
+  }, [route.name]);
+
+  let content: React.ReactNode;
   switch (route.name) {
     case 'rsvp':
       // ゲスト回答リンクは従来どおり維持する（発行済みリンクを壊さない）
-      return (
+      content = (
         <AppStateProvider mode="app">
           <CloudSync />
-          <RsvpPage token={route.token} />
+          <Suspense fallback={<ViewLoading />}>
+            <RsvpPage token={route.token} />
+          </Suspense>
         </AppStateProvider>
       );
+      break;
     case 'demo':
-      return <DemoRoute key={route.large ? 'large' : 'normal'} large={route.large} />;
+      content = <DemoRoute key={route.large ? 'large' : 'normal'} large={route.large} />;
+      break;
     case 'login':
-      return <AuthPage mode="login" />;
+      content = <AuthPage mode="login" />;
+      break;
     case 'signup':
-      return <AuthPage mode="signup" />;
+      content = <AuthPage mode="signup" />;
+      break;
     case 'app':
-      return <AppGate />;
+      content = <AppGate />;
+      break;
     default:
-      return <Landing />;
+      content = <Landing />;
   }
+
+  return <ErrorBoundary key={route.name}>{content}</ErrorBoundary>;
 }

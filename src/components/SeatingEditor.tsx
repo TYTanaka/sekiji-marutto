@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { proposeAssignmentsWithReasons } from '../lib/autoSeat';
 import { checkSeatingEtiquette } from '../lib/etiquette';
 import { useAppState } from '../store/appState';
@@ -35,6 +35,15 @@ export function SeatingEditor() {
   const [newTableName, setNewTableName] = useState('');
   const [newTableSeats, setNewTableSeats] = useState(8);
   const [autoNotice, setAutoNotice] = useState('');
+  const [seatHint, setSeatHint] = useState('');
+  const resultRef = useRef<HTMLDivElement | null>(null);
+
+  // 自動配置の結果（お知らせ・配置の理由）へ自動でスクロールして目に入るようにする
+  useEffect(() => {
+    if (autoNotice) {
+      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [autoNotice]);
 
   const unassigned = unassignedAttending(state);
   const suggestion = tableSuggestion(state.tables);
@@ -151,7 +160,9 @@ export function SeatingEditor() {
           <span className="muted">同じ側・同じグループの方が同じ卓になるよう、上座を配慮して仮配置します</span>
         </div>
       )}
-      {autoNotice && <div className="hint" role="status">{autoNotice}</div>}
+      <div ref={resultRef}>
+        {autoNotice && <div className="hint" role="status">{autoNotice}</div>}
+      </div>
       {lastProposal && (
         <div className="card reasons-panel">
           <div className="changes-head">
@@ -210,6 +221,7 @@ export function SeatingEditor() {
               style={{ touchAction: 'none' }}
               onClick={() => {
                 if (consumeDragClick()) return;
+                setSeatHint('');
                 setSelectedId((current) =>
                   current === guest.id ? null : guest.id,
                 );
@@ -239,6 +251,10 @@ export function SeatingEditor() {
         <p className="arm-hint">
           {`${selectedGuest.name}さんを選択中：座らせたい席をタップしてください（やめる場合はもう一度チップをタップ）`}
         </p>
+      )}
+
+      {!selectedGuest && seatHint && (
+        <p className="arm-hint" role="status">{seatHint}</p>
       )}
 
       {armedSeat && (
@@ -387,6 +403,8 @@ export function SeatingEditor() {
                           });
                           setSelectedId(null);
                           setArmedSeat(null);
+                        } else {
+                          setSeatHint('まず上のチップから、座らせるゲストを選んでください');
                         }
                       }}
                     >

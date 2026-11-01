@@ -25,10 +25,11 @@ describe('App smoke', () => {
     expect(screen.getByText(/未配置のゲスト/)).toBeTruthy()
   })
 
-  it('invitation view shows the venue and couple names', () => {
+  it('invitation view shows the venue and couple names', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('tab', { name: '招待状' }))
-    expect(screen.getByText(/青山ウェディングホール/)).toBeTruthy()
+    // 招待状タブは遅延読み込みされるため、表示を待つ
+    expect(await screen.findByText(/青山ウェディングホール/)).toBeTruthy()
     expect(screen.getByText(/佐藤 健太/)).toBeTruthy()
   })
 })

@@ -1272,6 +1272,16 @@ button:not([class]):hover { background: var(--rose-soft); }
 .demo-banner p { margin: 0 0 10px; line-height: 1.8; font-size: .92rem; }
 .demo-banner-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .demo-banner-actions .btn, .demo-banner-actions .btn-primary, .demo-banner-actions .btn-ghost { text-decoration: none; }
+.demo-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  border: 1px dashed var(--rose, #b76e79); border-radius: 999px;
+  background: var(--surface-warm, #FBF4E8); padding: 6px 8px 6px 16px; margin-bottom: 14px;
+  font-size: .86rem; font-weight: 600;
+}
+.demo-bar-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; }
+.demo-bar-btn { min-height: 32px; padding: 4px 12px; font-size: .82rem; text-decoration: none; }
+.demo-sample-row { display: grid; gap: 8px; }
+#active-view:focus { outline: none; }
 .auth-page-card { max-width: 560px; margin: 0 auto; }
 .auth-page-title { font-family: var(--font-serif); font-size: 1.6rem; margin: 8px 0 12px; }
 .auth-switch { margin-top: 16px; font-size: .9rem; }

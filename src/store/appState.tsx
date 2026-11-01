@@ -208,13 +208,95 @@ function hasMinimalShape(value: unknown): value is AppState {
   );
 }
 
+const SIDES = ['groom', 'bride'];
+const GROUPS = ['family', 'work', 'friends', 'other'];
+const RSVPS = ['pending', 'attending', 'declined'];
+
+function asString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
+/**
+ * 保存データの要素単位の検証・修復。
+ * 壊れた要素は落とし、型の合わない項目は安全な既定値に戻す。
+ * （トップレベルの形だけ見て通すと、要素の破損が描画時の例外＝白画面につながるため）
+ */
 export function normalizeState(state: AppState): AppState {
-  const guests = state.guests.map((g) =>
-    g.inviteToken ? g : { ...g, inviteToken: newInviteToken() },
-  );
-  const tasks = Array.isArray(state.tasks) ? state.tasks : createDefaultTasks(state.info.date);
-  if (guests.every((g, i) => g === state.guests[i]) && tasks === state.tasks) return state;
-  return { ...state, guests, tasks };
+  const rawGuests: unknown[] = Array.isArray(state.guests) ? state.guests : [];
+  const guests: AppState['guests'] = [];
+  for (const raw of rawGuests) {
+    if (typeof raw !== 'object' || raw === null) continue;
+    const g = raw as Record<string, unknown>;
+    if (typeof g.id !== 'string' || typeof g.name !== 'string') continue;
+    guests.push({
+      id: g.id,
+      name: g.name,
+      title: asString(g.title),
+      side: SIDES.includes(g.side as string) ? (g.side as AppState['guests'][number]['side']) : 'groom',
+      group: GROUPS.includes(g.group as string)
+        ? (g.group as AppState['guests'][number]['group'])
+        : 'friends',
+      rsvp: RSVPS.includes(g.rsvp as string)
+        ? (g.rsvp as AppState['guests'][number]['rsvp'])
+        : 'pending',
+      allergy: asString(g.allergy),
+      companions:
+        typeof g.companions === 'number' && Number.isFinite(g.companions)
+          ? Math.min(5, Math.max(0, Math.trunc(g.companions)))
+          : 0,
+      memo: asString(g.memo),
+      inviteToken:
+        typeof g.inviteToken === 'string' && g.inviteToken ? g.inviteToken : newInviteToken(),
+    });
+  }
+
+  const rawTables: unknown[] = Array.isArray(state.tables) ? state.tables : [];
+  const tables: AppState['tables'] = [];
+  for (const raw of rawTables) {
+    if (typeof raw !== 'object' || raw === null) continue;
+    const t = raw as Record<string, unknown>;
+    if (typeof t.id !== 'string' || typeof t.name !== 'string') continue;
+    tables.push({
+      id: t.id,
+      name: t.name,
+      seats:
+        typeof t.seats === 'number' && Number.isFinite(t.seats)
+          ? Math.min(30, Math.max(1, Math.trunc(t.seats)))
+          : 8,
+    });
+  }
+
+  const guestIds = new Set(guests.map((g) => g.id));
+  const tableIds = new Set(tables.map((t) => t.id));
+  const assignments: AppState['assignments'] = {};
+  if (typeof state.assignments === 'object' && state.assignments !== null) {
+    for (const [guestId, a] of Object.entries(state.assignments)) {
+      if (!guestIds.has(guestId)) continue;
+      if (typeof a !== 'object' || a === null) continue;
+      const seat = a as Record<string, unknown>;
+      if (typeof seat.tableId !== 'string' || !tableIds.has(seat.tableId)) continue;
+      if (typeof seat.seatIndex !== 'number' || !Number.isFinite(seat.seatIndex)) continue;
+      assignments[guestId] = {
+        tableId: seat.tableId,
+        seatIndex: Math.max(0, Math.trunc(seat.seatIndex)),
+      };
+    }
+  }
+
+  const infoSource =
+    typeof state.info === 'object' && state.info !== null
+      ? (state.info as unknown as Record<string, unknown>)
+      : {};
+  const info: AppState['info'] = {
+    groomName: asString(infoSource.groomName),
+    brideName: asString(infoSource.brideName),
+    date: asString(infoSource.date),
+    venue: asString(infoSource.venue),
+    message: asString(infoSource.message),
+  };
+
+  const tasks = Array.isArray(state.tasks) ? state.tasks : createDefaultTasks(info.date);
+  return { ...state, guests, tables, assignments, info, tasks };
 }
 
 export function loadInitialState(): AppState {

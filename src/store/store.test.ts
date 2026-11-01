@@ -35,4 +35,31 @@ describe('hydrate', () => {
     const other = { ...createSeedState(), guests: [] }
     expect(reducer(s, { type: 'hydrate', state: other }).guests).toHaveLength(0)
   })
+
+  it('壊れた要素は落とし、不正な割り当ては除去する（白画面防止）', () => {
+    const s = createSeedState()
+    const broken = {
+      ...createSeedState(),
+      guests: [
+        ...createSeedState().guests,
+        { id: 123, name: 'idが数値' },
+        null,
+        { id: 'gx', name: '値が変なゲスト', side: 'alien', group: 'vip', rsvp: 'maybe', companions: 99 },
+      ],
+      assignments: {
+        ...createSeedState().assignments,
+        ghost: { tableId: 'table-a', seatIndex: 0 },
+        g1: { tableId: 'no-such-table', seatIndex: 0 },
+      },
+    } as unknown as ReturnType<typeof createSeedState>
+    const next = reducer(s, { type: 'hydrate', state: broken })
+    expect(next.guests.some((g) => g.name === 'idが数値')).toBe(false)
+    const odd = next.guests.find((g) => g.id === 'gx')
+    expect(odd?.side).toBe('groom')
+    expect(odd?.group).toBe('friends')
+    expect(odd?.rsvp).toBe('pending')
+    expect(odd?.companions).toBe(5)
+    expect(next.assignments['ghost']).toBeUndefined()
+    expect(next.assignments['g1']).toBeUndefined()
+  })
 })

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppState } from '../store/appState';
 import type { RsvpStatus } from '../types';
-import heroUrl from '../assets/hero.jpg';
+import heroUrl from '../assets/hero.webp';
 
 function parseDate(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);

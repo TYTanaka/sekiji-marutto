@@ -6,7 +6,7 @@ import {
   type InvitationData,
 } from '../lib/supabase';
 import { useAppState } from '../store/appState';
-import heroUrl from '../assets/hero.jpg';
+import heroUrl from '../assets/hero.webp';
 
 type RsvpPageProps = {
   token: string;

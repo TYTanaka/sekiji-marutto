@@ -8,8 +8,9 @@ import {
   inviteUrlFor,
 } from '../lib/reminder';
 import { createDefaultTasks } from '../lib/tasks';
+import { scopedDeviceKey } from '../lib/deviceKeys';
 import type { Guest } from '../types';
-import heroUrl from '../assets/hero.jpg';
+import heroUrl from '../assets/hero.webp';
 
 const SETUP_DONE_KEY = 'sekiji-setup-done-v1';
 const SAMPLE_GROOM = '佐藤 健太';
@@ -23,7 +24,7 @@ function daysUntil(iso: string): number | null {
   return Math.round((target.getTime() - today.getTime()) / 86400000);
 }
 
-export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
+export function Dashboard({ onShowPending, onShowPrint }: { onShowPending?: () => void; onShowPrint?: () => void }) {
   const { state, changes, clearChanges, opens, dispatch, dispatchWithUndo, mode } = useAppState();
   const isDemo = mode === 'demo';
   const sum = summarize(state);
@@ -70,9 +71,10 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
   // 初期設定カード： まだサンプルの式情報のままなら、自分の式で始める導線を出す
   const isSampleInfo =
     state.info.groomName === SAMPLE_GROOM && state.info.brideName === SAMPLE_BRIDE;
+  const setupKey = scopedDeviceKey(SETUP_DONE_KEY, state.info);
   const [setupDone, setSetupDone] = useState<boolean>(() => {
     try {
-      return localStorage.getItem(SETUP_DONE_KEY) === '1';
+      return localStorage.getItem(scopedDeviceKey(SETUP_DONE_KEY, state.info)) === '1';
     } catch {
       return false;
     }
@@ -103,7 +105,7 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
   function markSetupDone() {
     setSetupDone(true);
     try {
-      localStorage.setItem(SETUP_DONE_KEY, '1');
+      localStorage.setItem(setupKey, '1');
     } catch {
       // Ignore storage failures.
     }
@@ -326,6 +328,16 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
           {unopenedPending.map((guest) =>
             reminderRow(guest, buildReminderMessage(guest, state.info, inviteUrlFor(guest.inviteToken))),
           )}
+        </div>
+      )}
+
+      {onShowPrint && (
+        <div className="card">
+          <h2>席次表の印刷・式場への提出</h2>
+          <p className="muted">完成した席次表はA4で印刷でき、式場提出パック（ゲスト一覧＋変更差分）も作れます。</p>
+          <button type="button" className="btn btn-primary" onClick={onShowPrint}>
+            印刷ビューを開く
+          </button>
         </div>
       )}
     </section>

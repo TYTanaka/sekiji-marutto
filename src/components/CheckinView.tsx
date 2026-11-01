@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useAppState } from '../store/appState';
+import { scopedDeviceKey } from '../lib/deviceKeys';
 import type { Guest } from '../types';
 
 const CHECKIN_KEY = 'sekiji-checkin-v1';
 
-function loadCheckins(): Record<string, boolean> {
+function loadCheckins(key: string): Record<string, boolean> {
   try {
-    const raw = localStorage.getItem(CHECKIN_KEY);
+    const raw = localStorage.getItem(key);
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
       if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
@@ -28,7 +29,11 @@ interface Row {
 /** 当日受付モード： 出席ゲストを卓順に並べ、タップで到着チェックする */
 export function CheckinView() {
   const { state } = useAppState();
-  const [checkins, setCheckins] = useState<Record<string, boolean>>(loadCheckins);
+  // 到着チェックは式ごとに端末内キー分離する（同じ端末の別の式に残さない）
+  const storageKey = scopedDeviceKey(CHECKIN_KEY, state.info);
+  const [checkins, setCheckins] = useState<Record<string, boolean>>(() =>
+    loadCheckins(storageKey),
+  );
   const [query, setQuery] = useState('');
   const [onlyPending, setOnlyPending] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
@@ -79,7 +84,7 @@ export function CheckinView() {
         next[guestId] = true;
       }
       try {
-        localStorage.setItem(CHECKIN_KEY, JSON.stringify(next));
+        localStorage.setItem(storageKey, JSON.stringify(next));
       } catch {
         // Persistence is best-effort.
       }
@@ -90,7 +95,7 @@ export function CheckinView() {
   function resetAll() {
     setCheckins({});
     try {
-      localStorage.removeItem(CHECKIN_KEY);
+      localStorage.removeItem(storageKey);
     } catch {
       // Ignore storage failures.
     }

@@ -66,7 +66,7 @@ describe('画面分離（トップ/デモ/ログイン/本番）', () => {
 
   it('デモはURLで開け、操作しても本番保存領域に書き込まれない', () => {
     render(<App />)
-    const demoLink = screen.getByRole('link', { name: 'デモで試してみる' })
+    const demoLink = screen.getAllByRole('link', { name: 'デモで試してみる' })[0]
     expect(demoLink.getAttribute('href')).toBe('#/demo')
     setHash('#/demo')
     fireEvent(window, new Event('hashchange'))

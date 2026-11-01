@@ -10,12 +10,13 @@ describe('印刷用席次表（大規模サンプル）', () => {
   })
   afterEach(() => cleanup())
 
-  it('末尾の空席は1行に集約され、卓見出しの数と矛盾しない', () => {
+  it('末尾の空席は1行に集約され、卓見出しの数と矛盾しない', async () => {
     render(<App />)
     fireEvent.click(screen.getByRole('tab', { name: '印刷' }))
+    // 印刷ビューは遅延読み込みされるため、表示を待つ
     // 大規模サンプル: 同伴者を含む延べ人数で 8/8の卓が7（A〜G卓）、7/8の卓が8（H〜O卓）
     // 7/8の卓は「（空席 ×1）」が1行だけ出て、「（空席 ×2）」は出ない
+    expect(await screen.findAllByText('（空席 ×1）')).toHaveLength(8)
     expect(screen.queryAllByText('（空席 ×2）')).toHaveLength(0)
-    expect(screen.getAllByText('（空席 ×1）')).toHaveLength(8)
   })
 })
