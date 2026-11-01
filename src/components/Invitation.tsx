@@ -24,7 +24,9 @@ function parseDate(value: string): Date | null {
 }
 
 export function Invitation() {
-  const { state, dispatch } = useAppState();
+  const { state, dispatch, mode } = useAppState();
+  // デモではゲスト体験は見本RSVPプレビュー（F-1）に一本化するため、体験用フォームは出さない
+  const isDemo = mode === 'demo';
   const info = state.info;
   const [guestId, setGuestId] = useState(state.guests[0]?.id ?? '');
   const [rsvp, setRsvp] = useState<RsvpStatus | null>(null);
@@ -90,6 +92,7 @@ export function Invitation() {
         )}
       </div>
 
+      {!isDemo && (
       <div className="card">
         <h2>ゲスト回答（体験用）</h2>
         <p>
@@ -190,6 +193,7 @@ export function Invitation() {
           </div>
         )}
       </div>
+      )}
     </section>
   );
 }

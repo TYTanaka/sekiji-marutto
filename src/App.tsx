@@ -286,11 +286,12 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
           <div className="demo-bar" role="note">
             <span className="demo-bar-label">
               <span className="demo-bar-chip">デモ</span>
-              <span className="demo-bar-text">サンプル（保存されません）</span>
+              <span className="demo-bar-text demo-bar-text-full">サンプル（保存されません）</span>
+              <span className="demo-bar-text demo-bar-text-short" aria-hidden="true">サンプル（保存なし）</span>
             </span>
             <span className="demo-bar-actions">
               <button type="button" className="btn-ghost demo-bar-btn" onClick={resetDemo}>
-                元に戻す
+                リセット
               </button>
               <button type="button" className="btn-ghost demo-bar-btn" onClick={() => setBannerOverride(true)}>
                 詳しく
@@ -552,7 +553,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                         className="btn btn-ghost"
                         target="_blank"
                         rel="noreferrer"
-                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('結婚式準備に使っている「席次まるっと」。出欠の回答がそのまま席次表になって、席も自動で提案してくれます。無料で使えます💒')}&url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}#/?utm_source=share_x`)}`}
+                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent('結婚式準備に使っている「席次まるっと」。出欠の回答がそのまま席次表になって、席も自動で配置してくれます。無料で使えます💒')}&url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}#/?utm_source=share_x`)}`}
                       >
                         Xで紹介する
                       </a>

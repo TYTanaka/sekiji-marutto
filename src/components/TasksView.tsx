@@ -22,6 +22,7 @@ export function TasksView() {
   const { state, dispatch, dispatchWithUndo } = useAppState();
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
 
   const { done, total, rate } = taskProgress(state.tasks);
   const today = calendarDay(new Date());
@@ -140,15 +141,31 @@ export function TasksView() {
                   className="btn btn-ghost"
                   type="button"
                   aria-label={`「${task.title}」を削除`}
-                  onClick={() =>
-                    dispatchWithUndo(
-                      { type: 'removeTask', taskId: task.id },
-                      `「${task.title}」を削除しました`,
-                    )
-                  }
+                  onClick={() => setConfirmingDeleteId(task.id)}
                 >
                   削除
                 </button>
+                {confirmingDeleteId === task.id && (
+                  <div className="confirm-inline">
+                    <span>{`「${task.title}」を削除しますか？`}</span>
+                    <button
+                      type="button"
+                      className="btn-danger"
+                      onClick={() => {
+                        dispatchWithUndo(
+                          { type: 'removeTask', taskId: task.id },
+                          `「${task.title}」を削除しました`,
+                        );
+                        setConfirmingDeleteId(null);
+                      }}
+                    >
+                      削除する
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => setConfirmingDeleteId(null)}>
+                      やめる
+                    </button>
+                  </div>
+                )}
               </li>
             );
           })}

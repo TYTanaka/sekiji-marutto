@@ -99,6 +99,8 @@ describe('画面分離（トップ/デモ/ログイン/本番）', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
     expect(screen.queryByText(/再読み込みすると元のサンプルに戻ります/)).toBeNull()
     expect(screen.getByText(/サンプル（保存されません）/)).toBeTruthy()
+    // スリムバーのリセット操作はUndoトーストの「元に戻す」と混同しない文言にする
+    expect(screen.getByRole('button', { name: 'リセット' })).toBeTruthy()
 
     // 招待状でもスリムのまま、概要に戻ると再び展開される
     fireEvent.click(screen.getByRole('tab', { name: '招待状' }))

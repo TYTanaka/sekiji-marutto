@@ -146,7 +146,7 @@ export function SeatingEditor() {
     entries.forEach(([guestId, a]) => {
       dispatch({ type: 'assign', guestId, tableId: a.tableId, seatIndex: a.seatIndex });
     });
-    setAutoNotice(entries.length > 0 ? `${entries.length}名を仮配置しました。ドラッグやタップで調整できます。` : '仮配置できるゲストはいませんでした。');
+    setAutoNotice(entries.length > 0 ? `${entries.length}名を配置しました。ドラッグやタップで調整できます。` : '配置できるゲストはいませんでした。');
     setLastProposal(entries.length > 0 ? { assignments: proposal, reasons } : null);
   }
 
@@ -155,9 +155,9 @@ export function SeatingEditor() {
       {unassigned.length > 0 && (
         <div className="table-controls">
           <button type="button" className="btn btn-primary" onClick={applyAutoSeat}>
-            席次を自動で提案する
+            席次を自動配置する
           </button>
-          <span className="muted">同じ側・同じグループの方が同じ卓になるよう、上座を配慮して仮配置します</span>
+          <span className="muted">同じグループ同士で、上座を配慮して配置します</span>
         </div>
       )}
       <div ref={resultRef}>
@@ -207,7 +207,7 @@ export function SeatingEditor() {
           未配置のゲスト（出席） <span>{unassigned.length}名</span>
         </h2>
         <p className="hint">
-          置き方：名前のチップをタップ → 座らせたい空席をタップ（ドラッグでも移動できます）。同伴者は本人の隣の席に座るものとして、人数に含めて数えています。
+          置き方：チップをタップ → 空席をタップ（ドラッグでも移動できます）。同伴者は本人の隣の席に座ります。
         </p>
         <div className="chips-row">
           {unassigned.map((guest: Guest) => (
@@ -242,9 +242,6 @@ export function SeatingEditor() {
             </button>
           ))}
         </div>
-        <p className="muted">
-          配置した席を外すときは、席をタップして確認表示を出してから、もう一度タップしてください。
-        </p>
       </section>
 
       {selectedGuest && (

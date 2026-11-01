@@ -25,6 +25,26 @@ describe('確認UIと元に戻す', () => {
     expect(screen.getByText(/12 名/)).toBeTruthy()
   })
 
+  it('タスク削除もページ内確認を経て、元に戻すで復元できる', async () => {
+    render(<App />)
+    fireEvent.click(screen.getByRole('tab', { name: '準備' }))
+    const target = '席次表を完成させる'
+    // 準備タスク画面は遅延読み込みされるため、表示を待つ
+    expect(await screen.findByText(target)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: `「${target}」を削除` }))
+    // ページ内確認が出て、まだ削除されていない
+    expect(screen.getByText(`「${target}」を削除しますか？`)).toBeTruthy()
+    expect(screen.getByText(target)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: '削除する' }))
+    expect(screen.queryByText(target)).toBeNull()
+    expect(screen.getByText(`「${target}」を削除しました`)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: '元に戻す' }))
+    expect(screen.getByText(target)).toBeTruthy()
+  })
+
   it('保存状態がヘッダーに表示される', () => {
     render(<App />)
     expect(screen.getByText(/✓ 保存済み/)).toBeTruthy()
