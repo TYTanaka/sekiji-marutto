@@ -1282,13 +1282,29 @@ button:not([class]):hover { background: var(--rose-soft); }
 .task-move:disabled { opacity: .35; }
 .share-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .demo-bar {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-  border: 1px dashed var(--rose, #b76e79); border-radius: 999px;
-  background: var(--surface-warm, #FBF4E8); padding: 6px 8px 6px 16px; margin-bottom: 14px;
-  font-size: .86rem; font-weight: 600;
+  display: flex; align-items: center; gap: 8px; flex-wrap: nowrap;
+  border: 1px dashed rgba(183, 110, 121, .55); border-radius: 14px;
+  background: var(--surface-warm, #FBF4E8); padding: 5px 4px 5px 8px; margin-bottom: 14px;
+  font-size: .8rem; font-weight: 600;
 }
-.demo-bar-actions { display: inline-flex; gap: 6px; flex-wrap: wrap; }
-.demo-bar-btn { min-height: 32px; padding: 4px 12px; font-size: .82rem; text-decoration: none; }
+.demo-bar-label { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.demo-bar-chip {
+  flex: none; display: inline-flex; align-items: center; min-height: 20px; padding: 1px 6px;
+  border-radius: 999px; background: var(--rose, #b76e79); color: #fff;
+  font-size: .68rem; font-weight: 700; letter-spacing: .06em;
+}
+.demo-bar-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; font-size: .78rem; }
+.demo-bar-actions { display: inline-flex; gap: 2px; flex-wrap: nowrap; flex: none; margin-left: auto; }
+.demo-bar .demo-bar-btn {
+  min-height: 32px; padding: 4px 5px; font-size: .78rem; text-decoration: none;
+  background: transparent; border-width: 0; border-radius: 8px;
+}
+.demo-bar .demo-bar-btn:hover:not(:disabled) { background: var(--rose-soft); }
+@media (max-width: 380px) {
+  .demo-bar-text { font-size: .72rem; }
+  .demo-bar-chip { font-size: .64rem; padding: 1px 5px; }
+  .demo-bar .demo-bar-btn { font-size: .72rem; padding: 4px 4px; }
+}
 .demo-sample-row { display: grid; gap: 8px; }
 .demo-rsvp-notice {
   border: 1.5px dashed var(--rose, #b76e79); border-radius: var(--r-md, 14px);

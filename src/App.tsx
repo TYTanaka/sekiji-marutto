@@ -284,7 +284,10 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
         )}
         {demo && !bannerOpen && (
           <div className="demo-bar" role="note">
-            <span>デモ：架空のサンプルデータ（保存されません）</span>
+            <span className="demo-bar-label">
+              <span className="demo-bar-chip">デモ</span>
+              <span className="demo-bar-text">サンプル（保存されません）</span>
+            </span>
             <span className="demo-bar-actions">
               <button type="button" className="btn-ghost demo-bar-btn" onClick={resetDemo}>
                 元に戻す

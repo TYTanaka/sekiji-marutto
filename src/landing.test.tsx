@@ -98,7 +98,7 @@ describe('画面分離（トップ/デモ/ログイン/本番）', () => {
     // ゲスト画面へ移動するとスリムバーになる
     fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
     expect(screen.queryByText(/再読み込みすると元のサンプルに戻ります/)).toBeNull()
-    expect(screen.getByText(/デモ：架空のサンプルデータ（保存されません）/)).toBeTruthy()
+    expect(screen.getByText(/サンプル（保存されません）/)).toBeTruthy()
 
     // 招待状でもスリムのまま、概要に戻ると再び展開される
     fireEvent.click(screen.getByRole('tab', { name: '招待状' }))
@@ -111,7 +111,7 @@ describe('画面分離（トップ/デモ/ログイン/本番）', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
     fireEvent.click(screen.getByRole('tab', { name: '概要' }))
     expect(screen.queryByText(/再読み込みすると元のサンプルに戻ります/)).toBeNull()
-    expect(screen.getByText(/デモ：架空のサンプルデータ（保存されません）/)).toBeTruthy()
+    expect(screen.getByText(/サンプル（保存されません）/)).toBeTruthy()
 
     // スリムな画面で手動で広げると、画面を移動しても展開のまま
     fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
