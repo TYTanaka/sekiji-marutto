@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase, cloudEnabled, fetchOpens } from '../lib/supabase';
 import { useAppState } from './appState';
+import { createEmptyState } from '../lib/seed';
 import type { AppState } from '../types';
+
+const LEGACY_BACKUP_KEY = 'sekiji-legacy-backup-v1';
+const STORAGE_KEY = 'sekiji-state-v2';
 
 type WeddingRow = {
   id: string;
@@ -10,12 +14,16 @@ type WeddingRow = {
 };
 
 export function CloudSync() {
-  const { state, dispatch, reportCloud, reportOpens } = useAppState();
+  const { state, dispatch, reportCloud, reportOpens, hadStoredData } = useAppState();
   const stateRef = useRef(state);
   const rowIdRef = useRef<string | null>(null);
   const lastWrittenRef = useRef<string>('');
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [rowId, setRowId] = useState<string | null>(null);
+  // クラウドに自分の行が無く、この端末に旧データがある場合の「明示的な取り込み」待ち
+  const [importPrompt, setImportPrompt] = useState(false);
+  const pendingUserRef = useRef<string | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
 
   useEffect(() => {
     stateRef.current = state;
@@ -73,11 +81,21 @@ export function CloudSync() {
         return;
       }
 
-      const currentState = stateRef.current;
-      const json = JSON.stringify(currentState);
+      // クラウドに自分のデータがまだ無い場合。
+      // この端末に以前から保存されたデータがある場合は、勝手にアップロードせず、
+      // 本人が「取り込む」と選んだときだけ作成する（旧データの所有者・用途を推測しない）。
+      if (hadStoredData) {
+        pendingUserRef.current = userId;
+        setImportPrompt(true);
+        return;
+      }
+
+      // 端末にもデータが無い新規ユーザーは、サンプルではなく空の状態から始める。
+      const empty = createEmptyState();
+      const json = JSON.stringify(empty);
       const { data: inserted, error: insertError } = await client
         .from('weddings')
-        .insert({ owner_id: userId, state: currentState })
+        .insert({ owner_id: userId, state: empty })
         .select('id')
         .single();
 
@@ -90,6 +108,7 @@ export function CloudSync() {
       const insertedRow = inserted as unknown as { id: string };
       rowIdRef.current = insertedRow.id;
       lastWrittenRef.current = json;
+      dispatch({ type: 'hydrate', state: empty });
       setRowId(insertedRow.id);
       reportCloud('synced');
     };
@@ -116,7 +135,7 @@ export function CloudSync() {
         saveTimerRef.current = null;
       }
     };
-  }, [dispatch, reportCloud, reportOpens]);
+  }, [dispatch, reportCloud, reportOpens, hadStoredData]);
 
   useEffect(() => {
     if (!cloudEnabled || !supabase || !rowId) return;
@@ -212,5 +231,79 @@ export function CloudSync() {
     };
   }, [state, rowId, reportCloud]);
 
-  return null;
+  async function createRowWith(initial: AppState): Promise<boolean> {
+    if (!supabase || !pendingUserRef.current) return false;
+    const { data: inserted, error } = await supabase
+      .from('weddings')
+      .insert({ owner_id: pendingUserRef.current, state: initial })
+      .select('id')
+      .single();
+    if (error || !inserted) return false;
+    const insertedRow = inserted as unknown as { id: string };
+    rowIdRef.current = insertedRow.id;
+    lastWrittenRef.current = JSON.stringify(initial);
+    setRowId(insertedRow.id);
+    reportCloud('synced');
+    return true;
+  }
+
+  async function importLocalData() {
+    if (importBusy) return;
+    setImportBusy(true);
+    try {
+      const ok = await createRowWith(stateRef.current);
+      if (ok) {
+        pendingUserRef.current = null;
+        setImportPrompt(false);
+      }
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
+  async function startFresh() {
+    if (importBusy) return;
+    setImportBusy(true);
+    try {
+      // 空で始める場合も、端末の旧データは別名キーへ退避して保持する（推測で消さない）
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw && !localStorage.getItem(LEGACY_BACKUP_KEY)) {
+          localStorage.setItem(LEGACY_BACKUP_KEY, raw);
+        }
+      } catch {
+        // Storage unavailable; proceed without the extra copy.
+      }
+      const empty = createEmptyState();
+      const ok = await createRowWith(empty);
+      if (ok) {
+        dispatch({ type: 'hydrate', state: empty });
+        pendingUserRef.current = null;
+        setImportPrompt(false);
+      }
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
+  if (!importPrompt) return null;
+
+  return (
+    <section className="cloud-import-banner card" role="dialog" aria-label="この端末のデータの取り込み">
+      <h2>この端末に保存されたデータがあります</h2>
+      <p className="muted">
+        以前のバージョンでこの端末に保存された準備データが見つかりました。
+        クラウドへ自動では送りません。あなたのデータであれば取り込んでください。
+        取り込まない場合は空の状態から始めます（端末のデータはバックアップとして別名で保持されます）。
+      </p>
+      <div className="auth-actions">
+        <button type="button" className="btn-primary" disabled={importBusy} onClick={() => void importLocalData()}>
+          この端末のデータをクラウドに取り込む
+        </button>
+        <button type="button" className="btn-ghost" disabled={importBusy} onClick={() => void startFresh()}>
+          空の状態ではじめる
+        </button>
+      </div>
+    </section>
+  );
 }

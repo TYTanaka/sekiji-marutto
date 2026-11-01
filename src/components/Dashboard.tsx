@@ -24,7 +24,8 @@ function daysUntil(iso: string): number | null {
 }
 
 export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
-  const { state, changes, clearChanges, opens, dispatch, dispatchWithUndo } = useAppState();
+  const { state, changes, clearChanges, opens, dispatch, dispatchWithUndo, mode } = useAppState();
+  const isDemo = mode === 'demo';
   const sum = summarize(state);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const pendingGuests = state.guests.filter((g) => g.rsvp === 'pending');
@@ -33,6 +34,14 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
   const days = daysUntil(state.info.date);
 
   function reminderRow(guest: Guest, text: string) {
+    if (isDemo) {
+      // デモでは外部への送信・共有を行わない（名前の表示のみ）
+      return (
+        <div key={guest.id} className="guest-row">
+          <span>{guest.name} 様</span>
+        </div>
+      );
+    }
     return (
       <div key={guest.id} className="guest-row">
         <span>{guest.name} 様</span>
@@ -78,7 +87,8 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
     setupForm.groomName.trim() !== '' &&
     setupForm.brideName.trim() !== '' &&
     setupForm.date !== '';
-  const showSetup = isSampleInfo && !setupDone;
+  // デモでは自分の式の情報を入れさせない（初期設定カードは本番専用）
+  const showSetup = !isDemo && isSampleInfo && !setupDone;
 
   function setupInfo() {
     return {
@@ -296,7 +306,11 @@ export function Dashboard({ onShowPending }: { onShowPending?: () => void }) {
       {pendingGuests.length > 0 && (
         <div className="card">
           <h2>未回答のゲストへの催促サポート</h2>
-          <p className="muted">そのまま送れる丁寧な文面を用意しました。コピーして普段の連絡手段で送るか、LINEで直接送れます。</p>
+          {isDemo ? (
+            <p className="muted">デモでは催促文の送信・共有はできません。登録・ログイン後の本番では、文面のコピーやLINE送信が使えます。</p>
+          ) : (
+            <p className="muted">そのまま送れる丁寧な文面を用意しました。コピーして普段の連絡手段で送るか、LINEで直接送れます。</p>
+          )}
           {openedPending.length > 0 && (
             <>
               <h3 className="pending-subhead">リンクを開いたのに未回答（回答まであと一歩）</h3>

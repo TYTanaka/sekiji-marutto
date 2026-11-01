@@ -1,7 +1,7 @@
-// App-rendering tests assume a returning user who has already entered the
-// app from the landing page, so the welcome gate is pre-dismissed.
+// App-rendering tests open the production shell directly via its URL (#/app).
+// In the test environment the cloud is disabled, so the auth gate passes.
 try {
-  localStorage.setItem('sekiji-entered-v1', '1');
+  window.location.hash = '#/app';
 } catch {
-  // Storage unavailable in this environment; tests that need it set it up.
+  // Hash unavailable in this environment; tests that need it set it up.
 }

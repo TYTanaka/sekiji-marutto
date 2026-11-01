@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Session } from '@supabase/supabase-js';
+import { useEffect, useRef, useState } from 'react';
 import { AppStateProvider, useAppState } from './store/appState';
 import { supabase, cloudEnabled } from './lib/supabase';
+import { parseRoute, navigateTo, type Route } from './lib/route';
 import { Landing } from './components/Landing';
+import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
 import { GuestManager } from './components/GuestManager';
 import { SeatingEditor } from './components/SeatingEditor';
@@ -11,10 +12,10 @@ import { InviteLinks } from './components/InviteLinks';
 import { PrintView } from './components/PrintView';
 import RsvpPage from './components/RsvpPage';
 import { CloudSync } from './store/cloudSync';
-import { AuthPanel } from './components/AuthPanel';
 import { TasksView } from './components/TasksView';
 import { CheckinView } from './components/CheckinView';
 import { UndoToast } from './components/UndoToast';
+import { createSeedState } from './lib/seed';
 import { createLargeSeedState } from './lib/seedLarge';
 import { downloadBackup, parseBackup } from './lib/backup';
 import type { AppState } from './types';
@@ -47,26 +48,12 @@ const MOBILE_LABELS: Record<View, string> = {
   settings: '設定',
 };
 
-const ENTERED_KEY = 'sekiji-entered-v1';
-const STATE_KEY = 'sekiji-state-v2';
-
-function Shell() {
+function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: AppState }) {
   const { state, dispatch, dispatchWithUndo, savedAt, cloudPhase } = useAppState();
   const [view, setView] = useState<View>('dashboard');
   const [focusPending, setFocusPending] = useState(0);
   const { info } = state;
 
-  const [entered, setEntered] = useState<boolean>(() => {
-    try {
-      return (
-        localStorage.getItem(ENTERED_KEY) === '1' ||
-        localStorage.getItem(STATE_KEY) !== null
-      );
-    } catch {
-      return true;
-    }
-  });
-  const [authOpen, setAuthOpen] = useState(false);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
 
@@ -75,33 +62,35 @@ function Shell() {
     window.scrollTo(0, 0);
   }, [view]);
 
-  const enterApp = useCallback(() => {
-    try {
-      localStorage.setItem(ENTERED_KEY, '1');
-    } catch {
-      // Storage unavailable; the in-memory state still enters the app.
-    }
-    setEntered(true);
-  }, []);
-
-  const handleSession = useCallback(
-    (session: Session | null) => {
-      setSessionEmail(session?.user.email ?? null);
-      if (session) enterApp();
-    },
-    [enterApp],
-  );
-
+  // 本番モードではヘッダーにログイン中アカウントを表示する（認証フォームは置かない）
   useEffect(() => {
-    if (entered || !cloudEnabled || !supabase) return;
+    if (demo || !cloudEnabled || !supabase) return;
     let active = true;
     void supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session) handleSession(data.session);
+      if (active) setSessionEmail(data.session?.user.email ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setSessionEmail(session?.user.email ?? null);
     });
     return () => {
       active = false;
+      subscription.unsubscribe();
     };
-  }, [entered, handleSession]);
+  }, [demo]);
+
+  async function logout() {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    navigateTo('#/');
+  }
+
+  function resetDemo() {
+    if (!demoInitialState) return;
+    dispatchWithUndo(
+      { type: 'hydrate', state: demoInitialState },
+      'サンプルを元に戻しました',
+    );
+  }
 
   const [confirmingReset, setConfirmingReset] = useState(false);
 
@@ -151,14 +140,6 @@ function Shell() {
     cancelBackup();
   }
 
-  function tryLargeSample() {
-    dispatchWithUndo(
-      { type: 'hydrate', state: createLargeSeedState() },
-      '120名の大規模サンプルを読み込みました',
-    );
-    enterApp();
-  }
-
   function selectView(next: View) {
     setView(next);
     setMoreOpen(false);
@@ -167,8 +148,9 @@ function Shell() {
   const timeText = savedAt
     ? `${savedAt.getHours()}:${String(savedAt.getMinutes()).padStart(2, '0')}`
     : '';
-  const saveText =
-    cloudPhase === 'syncing'
+  const saveText = demo
+    ? ''
+    : cloudPhase === 'syncing'
       ? 'クラウドへ保存中…'
       : cloudPhase === 'error'
         ? 'クラウド保存に失敗（この端末には保存済み）'
@@ -178,20 +160,13 @@ function Shell() {
             ? `✓ 保存済み ${timeText}`
             : '';
 
-  if (!entered) {
-    return (
-      <Landing
-        onTrySample={enterApp}
-        onTryLargeSample={tryLargeSample}
-        onSessionChange={handleSession}
-      />
-    );
-  }
-
   return (
     <>
       <header className="app-header">
-        <span className="brand">席次まるっと</span>
+        <a className="brand brand-link" href="#/">
+          席次まるっと
+        </a>
+        {demo && <span className="demo-badge">デモ</span>}
         {saveText && (
           <span className="save-status" role="status">
             {saveText}
@@ -213,23 +188,45 @@ function Shell() {
             </button>
           ))}
         </nav>
-        {cloudEnabled && (
-          <button
-            type="button"
-            className="btn-ghost auth-toggle"
-            aria-expanded={authOpen}
-            onClick={() => setAuthOpen((open) => !open)}
-          >
-            {sessionEmail ? 'アカウント' : 'ログイン / 新規登録'}
-          </button>
-        )}
+        {demo ? (
+          <span className="header-actions">
+            <a className="btn-ghost auth-toggle" href="#/login">
+              ログイン
+            </a>
+            <a className="btn-ghost auth-toggle" href="#/signup">
+              新規登録
+            </a>
+          </span>
+        ) : cloudEnabled ? (
+          <span className="header-actions">
+            {sessionEmail && <span className="account-email">{sessionEmail}</span>}
+            <button type="button" className="btn-ghost auth-toggle" onClick={() => void logout()}>
+              ログアウト
+            </button>
+          </span>
+        ) : null}
       </header>
 
       <main className="main">
-        {authOpen && cloudEnabled && (
-          <div className="auth-popover">
-            <AuthPanel onSessionChange={handleSession} />
-          </div>
+        {demo && (
+          <section className="demo-banner" aria-label="デモの案内">
+            <p>
+              <strong>デモ</strong>：架空のサンプルデータを使用しています。
+              操作内容は保存されず、本番データに影響しません。再読み込みすると元のサンプルに戻ります。
+              ゲストは実在の人物ではないため、個人情報を入力する必要はありません。
+            </p>
+            <div className="demo-banner-actions">
+              <button type="button" className="btn btn-ghost" onClick={resetDemo}>
+                サンプルを元に戻す
+              </button>
+              <a className="btn btn-ghost" href="#/">
+                デモを終了してトップへ戻る
+              </a>
+              <a className="btn btn-primary" href="#/signup">
+                新規登録して利用を始める
+              </a>
+            </div>
+          </section>
         )}
         <div
           id="active-view"
@@ -239,7 +236,20 @@ function Shell() {
           {view === 'dashboard' && (<Dashboard onShowPending={() => { setView('guests'); setFocusPending((n) => n + 1); }} />)}
           {view === 'guests' && <GuestManager focusPendingSignal={focusPending} />}
           {view === 'seating' && <SeatingEditor />}
-          {view === 'invitation' && (<><InviteLinks /><Invitation /></>)}
+          {view === 'invitation' && demo && (
+            <>
+              <section className="card">
+                <h2>招待リンクについて（デモ）</h2>
+                <p className="muted">
+                  デモでは、本番用の招待リンクの発行・公開や、外部への送信はできません。
+                  登録・ログインすると、ゲストごとの本物の招待リンクを発行して送れるようになります。
+                  招待状そのものの見た目は、下のプレビューで確認できます。
+                </p>
+              </section>
+              <Invitation />
+            </>
+          )}
+          {view === 'invitation' && !demo && (<><InviteLinks /><Invitation /></>)}
           {view === 'tasks' && <TasksView />}
           {view === 'print' && <PrintView />}
           {view === 'checkin' && <CheckinView />}
@@ -248,6 +258,12 @@ function Shell() {
         {view === 'settings' && (
           <section className="card settings-card" aria-labelledby="settings-title">
             <h2 id="settings-title">式の情報</h2>
+            {demo && (
+              <p className="muted">
+                デモでは式の基本情報（新郎新婦名・挙式日・会場など）は固定で、編集できません。
+                自分の結婚式の情報は、登録・ログイン後に設定できます。
+              </p>
+            )}
             <form onSubmit={(event) => event.preventDefault()}>
               <div className="form-grid">
                 <label htmlFor="groom-name">
@@ -255,6 +271,7 @@ function Shell() {
                   <input
                     id="groom-name"
                     type="text"
+                    disabled={demo}
                     value={info.groomName}
                     onChange={(event) =>
                       dispatch({
@@ -269,6 +286,7 @@ function Shell() {
                   <input
                     id="bride-name"
                     type="text"
+                    disabled={demo}
                     value={info.brideName}
                     onChange={(event) =>
                       dispatch({
@@ -283,6 +301,7 @@ function Shell() {
                   <input
                     id="wedding-date"
                     type="date"
+                    disabled={demo}
                     value={info.date}
                     onChange={(event) =>
                       dispatch({
@@ -297,6 +316,7 @@ function Shell() {
                   <input
                     id="wedding-venue"
                     type="text"
+                    disabled={demo}
                     value={info.venue}
                     onChange={(event) =>
                       dispatch({
@@ -311,6 +331,7 @@ function Shell() {
                   <textarea
                     id="wedding-message"
                     rows={4}
+                    disabled={demo}
                     value={info.message}
                     onChange={(event) =>
                       dispatch({
@@ -322,86 +343,90 @@ function Shell() {
                 </label>
               </div>
             </form>
-            <div className="sample-zone">
-              <h3>大規模サンプルの確認</h3>
-              <p className="muted">
-                120名・15卓の披露宴データを読み込んで、表示や席次の動作を確認できます。出席者は自動配置済みの状態で読み込まれます。
-              </p>
-              {confirmingLoad ? (
-                <div className="sample-confirm">
-                  <span>現在のデータは置き換わります（クラウド保存も同様）。本当に読み込みますか？</span>
-                  <button type="button" className="btn btn-primary" onClick={loadLargeSample}>
-                    読み込む
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={() => setConfirmingLoad(false)}>
-                    やめる
-                  </button>
+            {!demo && (
+              <>
+                <div className="sample-zone">
+                  <h3>大規模サンプルの確認</h3>
+                  <p className="muted">
+                    120名・15卓の披露宴データを読み込んで、表示や席次の動作を確認できます。出席者は自動配置済みの状態で読み込まれます。
+                  </p>
+                  {confirmingLoad ? (
+                    <div className="sample-confirm">
+                      <span>現在のデータは置き換わります（クラウド保存も同様）。本当に読み込みますか？</span>
+                      <button type="button" className="btn btn-primary" onClick={loadLargeSample}>
+                        読み込む
+                      </button>
+                      <button type="button" className="btn btn-ghost" onClick={() => setConfirmingLoad(false)}>
+                        やめる
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="btn btn-ghost btn-block" onClick={() => setConfirmingLoad(true)}>
+                      120名の大規模サンプルを読み込む
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button type="button" className="btn btn-ghost btn-block" onClick={() => setConfirmingLoad(true)}>
-                  120名の大規模サンプルを読み込む
-                </button>
-              )}
-            </div>
-            <div className="backup-zone">
-              <h3>データのバックアップ</h3>
-              <p className="muted">
-                いまの準備データをJSONファイルに書き出しておくと、端末やブラウザを変えても復元できます。読み込むと現在のデータと置き換わりますが、実行直後であれば「元に戻す」で取り消せます。
-              </p>
-              <div className="backup-actions">
-                <button type="button" className="btn btn-ghost btn-block" onClick={() => downloadBackup(state)}>
-                  バックアップを書き出す
-                </button>
-                <label className="btn btn-ghost btn-block backup-file-label">
-                  バックアップを読み込む
-                  <input
-                    ref={backupFileRef}
-                    type="file"
-                    accept=".json,application/json"
-                    hidden
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) void handleBackupFile(file);
-                    }}
-                  />
-                </label>
-              </div>
-              {backupError && (
-                <p className="backup-error" role="alert">{backupError}</p>
-              )}
-              {pendingBackup && (
-                <div className="sample-confirm">
-                  <span>{`「${pendingBackup.info.groomName} ・ ${pendingBackup.info.brideName}」のバックアップです。現在のデータは置き換わります。本当に読み込みますか？`}</span>
-                  <button type="button" className="btn btn-primary" onClick={applyBackup}>
-                    読み込む
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={cancelBackup}>
-                    やめる
-                  </button>
+                <div className="backup-zone">
+                  <h3>データのバックアップ</h3>
+                  <p className="muted">
+                    いまの準備データをJSONファイルに書き出しておくと、端末やブラウザを変えても復元できます。読み込むと現在のデータと置き換わりますが、実行直後であれば「元に戻す」で取り消せます。
+                  </p>
+                  <div className="backup-actions">
+                    <button type="button" className="btn btn-ghost btn-block" onClick={() => downloadBackup(state)}>
+                      バックアップを書き出す
+                    </button>
+                    <label className="btn btn-ghost btn-block backup-file-label">
+                      バックアップを読み込む
+                      <input
+                        ref={backupFileRef}
+                        type="file"
+                        accept=".json,application/json"
+                        hidden
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void handleBackupFile(file);
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {backupError && (
+                    <p className="backup-error" role="alert">{backupError}</p>
+                  )}
+                  {pendingBackup && (
+                    <div className="sample-confirm">
+                      <span>{`「${pendingBackup.info.groomName} ・ ${pendingBackup.info.brideName}」のバックアップです。現在のデータは置き換わります。本当に読み込みますか？`}</span>
+                      <button type="button" className="btn btn-primary" onClick={applyBackup}>
+                        読み込む
+                      </button>
+                      <button type="button" className="btn btn-ghost" onClick={cancelBackup}>
+                        やめる
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="danger-zone">
-              <h3>データの初期化</h3>
-              <p className="muted">
-                すべてのゲスト・席次・式の情報が最初のサンプルに戻ります。クラウド保存している場合はそちらも初期化されます。実行直後であれば「元に戻す」で取り消せます。
-              </p>
-              {confirmingReset ? (
-                <div className="sample-confirm">
-                  <span>本当に初期状態に戻しますか？</span>
-                  <button type="button" className="btn-danger" onClick={resetData}>
-                    初期状態に戻す
-                  </button>
-                  <button type="button" className="btn btn-ghost" onClick={() => setConfirmingReset(false)}>
-                    やめる
-                  </button>
+                <div className="danger-zone">
+                  <h3>データの初期化</h3>
+                  <p className="muted">
+                    すべてのゲスト・席次・式の情報が最初のサンプルに戻ります。クラウド保存している場合はそちらも初期化されます。実行直後であれば「元に戻す」で取り消せます。
+                  </p>
+                  {confirmingReset ? (
+                    <div className="sample-confirm">
+                      <span>本当に初期状態に戻しますか？</span>
+                      <button type="button" className="btn-danger" onClick={resetData}>
+                        初期状態に戻す
+                      </button>
+                      <button type="button" className="btn btn-ghost" onClick={() => setConfirmingReset(false)}>
+                        やめる
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" className="btn-danger-ghost" onClick={() => setConfirmingReset(true)}>
+                      データを初期状態に戻す
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button type="button" className="btn-danger-ghost" onClick={() => setConfirmingReset(true)}>
-                  データを初期状態に戻す
-                </button>
-              )}
-            </div>
+              </>
+            )}
           </section>
         )}
       </main>
@@ -452,27 +477,101 @@ function Shell() {
   );
 }
 
-function useRsvpToken(): string | null {
-  const [token, setToken] = useState<string | null>(() => parseRsvpToken());
+/** 本番管理画面（#/app）：未ログインならログインページへ案内する */
+function AppGate() {
+  const [status, setStatus] = useState<'loading' | 'in' | 'out'>(
+    cloudEnabled ? 'loading' : 'in',
+  );
+
   useEffect(() => {
-    const onChange = () => setToken(parseRsvpToken());
+    if (!cloudEnabled || !supabase) return;
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active) setStatus(data.session ? 'in' : 'out');
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setStatus(session ? 'in' : 'out');
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (status === 'out') navigateTo('#/login');
+  }, [status]);
+
+  if (status === 'loading') {
+    return (
+      <main className="landing">
+        <p role="status">ログイン状態を確認しています…</p>
+      </main>
+    );
+  }
+  if (status === 'out') {
+    return (
+      <main className="landing">
+        <p>
+          本番の管理画面にはログインが必要です。ログインページへ移動します…
+          <a href="#/login">ログイン</a>
+        </p>
+      </main>
+    );
+  }
+  return (
+    <AppStateProvider mode="app">
+      <CloudSync />
+      <Shell demo={false} />
+    </AppStateProvider>
+  );
+}
+
+function DemoRoute({ large }: { large: boolean }) {
+  const [initial] = useState<AppState>(() =>
+    large ? createLargeSeedState() : createSeedState(),
+  );
+  return (
+    <AppStateProvider mode="demo" demoInitialState={initial}>
+      <Shell demo demoInitialState={initial} />
+    </AppStateProvider>
+  );
+}
+
+function useRoute(): Route {
+  const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash));
+  useEffect(() => {
+    const onChange = () => {
+      setRoute(parseRoute(window.location.hash));
+      window.scrollTo(0, 0);
+    };
     window.addEventListener('hashchange', onChange);
     return () => window.removeEventListener('hashchange', onChange);
   }, []);
-  return token;
-}
-
-function parseRsvpToken(): string | null {
-  const match = /^#\/rsvp\/(.+)$/.exec(window.location.hash);
-  return match ? decodeURIComponent(match[1]) : null;
+  return route;
 }
 
 export default function App() {
-  const rsvpToken = useRsvpToken();
-  return (
-    <AppStateProvider>
-      <CloudSync />
-      {rsvpToken ? <RsvpPage token={rsvpToken} /> : <Shell />}
-    </AppStateProvider>
-  );
+  const route = useRoute();
+
+  switch (route.name) {
+    case 'rsvp':
+      // ゲスト回答リンクは従来どおり維持する（発行済みリンクを壊さない）
+      return (
+        <AppStateProvider mode="app">
+          <CloudSync />
+          <RsvpPage token={route.token} />
+        </AppStateProvider>
+      );
+    case 'demo':
+      return <DemoRoute key={route.large ? 'large' : 'normal'} large={route.large} />;
+    case 'login':
+      return <AuthPage mode="login" />;
+    case 'signup':
+      return <AuthPage mode="signup" />;
+    case 'app':
+      return <AppGate />;
+    default:
+      return <Landing />;
+  }
 }

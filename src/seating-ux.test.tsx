@@ -4,7 +4,7 @@ import { AppStateProvider } from './store/appState'
 import { SeatingEditor } from './components/SeatingEditor'
 
 describe('SeatingEditor UX', () => {
-  beforeEach(() => { localStorage.clear(); localStorage.setItem('sekiji-entered-v1', '1'); })
+  beforeEach(() => { localStorage.clear(); })
   afterEach(() => cleanup())
 
   it('occupied seat needs two taps to unassign', () => {

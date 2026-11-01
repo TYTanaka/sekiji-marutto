@@ -218,6 +218,11 @@ export function normalizeState(state: AppState): AppState {
 }
 
 export function loadInitialState(): AppState {
+  return loadInitialStateMeta().state;
+}
+
+/** 初期状態と「この端末に以前から保存された本番データがあったか」を返す */
+export function loadInitialStateMeta(): { state: AppState; fromStorage: boolean } {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
 
@@ -225,15 +230,17 @@ export function loadInitialState(): AppState {
       const parsed: unknown = JSON.parse(stored);
 
       if (hasMinimalShape(parsed)) {
-        return normalizeState(parsed);
+        return { state: normalizeState(parsed), fromStorage: true };
       }
     }
   } catch {
     // Unavailable storage or invalid JSON falls back to seed data.
   }
 
-  return createSeedState();
+  return { state: createSeedState(), fromStorage: false };
 }
+
+export type StoreMode = 'app' | 'demo';
 
 export type CloudPhase = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -244,6 +251,10 @@ interface UndoNotice {
 
 interface AppStateContextValue {
   state: AppState;
+  /** 'app' = 本番（永続化＋クラウド同期あり）, 'demo' = デモ（メモリ内のみ・本番と分離） */
+  mode: StoreMode;
+  /** 起動時にこの端末へ保存済みの本番データが存在したか（デモでは常に false） */
+  hadStoredData: boolean;
   dispatch: Dispatch<Action>;
   dispatchWithUndo: (action: Action, message: string) => void;
   undoNotice: UndoNotice | null;
@@ -288,9 +299,25 @@ function loadChanges(): ChangeEvent[] {
   return [];
 }
 
-export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
-  const [changes, setChanges] = useState<ChangeEvent[]>(loadChanges);
+export function AppStateProvider({
+  children,
+  mode = 'app',
+  demoInitialState,
+}: {
+  children: ReactNode;
+  mode?: StoreMode;
+  /** デモモードの初期状態（サンプル）。本番モードでは無視される */
+  demoInitialState?: AppState;
+}) {
+  const [init] = useState(() =>
+    mode === 'demo'
+      ? { state: demoInitialState ?? createSeedState(), fromStorage: false }
+      : loadInitialStateMeta(),
+  );
+  const [state, dispatch] = useReducer(reducer, init.state);
+  const [changes, setChanges] = useState<ChangeEvent[]>(() =>
+    mode === 'demo' ? [] : loadChanges(),
+  );
   const prevGuestsRef = useRef<Guest[] | null>(null);
 
   // 変更レーダー： ゲストの回答内容が前回から変わったら記録する。
@@ -303,23 +330,26 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (events.length === 0) return;
     setChanges((current) => {
       const merged = [...events.reverse(), ...current].slice(0, MAX_CHANGES);
-      try {
-        localStorage.setItem(CHANGES_KEY, JSON.stringify(merged));
-      } catch {
-        // Persistence is best-effort for the change feed.
+      if (mode === 'app') {
+        try {
+          localStorage.setItem(CHANGES_KEY, JSON.stringify(merged));
+        } catch {
+          // Persistence is best-effort for the change feed.
+        }
       }
       return merged;
     });
-  }, [state.guests]);
+  }, [state.guests, mode]);
 
   const clearChanges = useCallback(() => {
     setChanges([]);
+    if (mode !== 'app') return;
     try {
       localStorage.removeItem(CHANGES_KEY);
     } catch {
       // Ignore storage failures.
     }
-  }, []);
+  }, [mode]);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [cloudPhase, setCloudPhase] = useState<CloudPhase>('idle');
   const [undoNotice, setUndoNotice] = useState<UndoNotice | null>(null);
@@ -329,13 +359,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // デモは本番の保存領域に一切書き込まない（メモリ内のみ）
+    if (mode !== 'app') return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       // Keep the store usable when persistence is unavailable.
     }
     setSavedAt(new Date());
-  }, [state]);
+  }, [state, mode]);
 
   const dismissUndo = useCallback(() => {
     setUndoNotice(null);
@@ -390,6 +422,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     <AppStateContext.Provider
       value={{
         state,
+        mode,
+        hadStoredData: init.fromStorage,
         dispatch,
         dispatchWithUndo,
         undoNotice,

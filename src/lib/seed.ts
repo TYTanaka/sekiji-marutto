@@ -1,6 +1,33 @@
 import type { AppState } from '../types';
 import { createDefaultTasks } from './tasks';
 
+/**
+ * 新規ユーザーの本番データの初期状態。
+ * デモ（サンプル）の新郎新婦情報や架空のゲスト名簿は入れない。
+ * 式の情報は空欄で、準備タスクの既定セットだけを用意する。
+ */
+export function createEmptyState(): AppState {
+  return {
+    version: 2,
+    info: {
+      groomName: '',
+      brideName: '',
+      date: '',
+      venue: '',
+      message: '',
+    },
+    tables: [
+      { id: 'table-a', name: 'A卓', seats: 8 },
+      { id: 'table-b', name: 'B卓', seats: 8 },
+      { id: 'table-c', name: 'C卓', seats: 8 },
+      { id: 'table-d', name: 'D卓', seats: 6 },
+    ],
+    tasks: createDefaultTasks(''),
+    guests: [],
+    assignments: {},
+  };
+}
+
 export function createSeedState(): AppState {
   return {
     version: 2,

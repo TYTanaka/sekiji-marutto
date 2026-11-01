@@ -1,14 +1,6 @@
-import { useState } from 'react';
-import type { Session } from '@supabase/supabase-js';
-import { AuthPanel } from './AuthPanel';
-import { cloudEnabled } from '../lib/supabase';
+import { useEffect, useState } from 'react';
+import { supabase, cloudEnabled } from '../lib/supabase';
 import heroUrl from '../assets/hero.jpg';
-
-interface LandingProps {
-  onTrySample: () => void;
-  onTryLargeSample: () => void;
-  onSessionChange: (session: Session | null) => void;
-}
 
 const features = [
   {
@@ -25,8 +17,28 @@ const features = [
   },
 ];
 
-export function Landing({ onTrySample, onTryLargeSample, onSessionChange }: LandingProps) {
-  const [showAuth, setShowAuth] = useState(false);
+/**
+ * サービス説明のトップページ。
+ * このURL（#/）を開けば、ログイン状態や保存データに関係なく常に表示される。
+ * ここでは本番データの読み書きは一切行わない。
+ */
+export function Landing() {
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!cloudEnabled || !supabase) return;
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active) setSessionEmail(data.session?.user.email ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setSessionEmail(session?.user.email ?? null);
+    });
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <main className="landing">
@@ -50,34 +62,30 @@ export function Landing({ onTrySample, onTryLargeSample, onSessionChange }: Land
           </div>
 
           <div className="landing-cta">
-            <button type="button" className="btn-primary landing-cta-main" onClick={onTrySample}>
-              サンプルで試してみる
-            </button>
-            {cloudEnabled && (
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => setShowAuth((value) => !value)}
-              >
-                ログイン / 新規登録
-              </button>
-            )}
+            <a className="btn-primary landing-cta-main" href="#/demo">
+              デモで試してみる
+            </a>
+            {cloudEnabled && sessionEmail ? (
+              <a className="btn-ghost" href="#/app">
+                管理画面を開く（ログイン中）
+              </a>
+            ) : cloudEnabled ? (
+              <>
+                <a className="btn-ghost" href="#/login">ログイン</a>
+                <a className="btn-ghost" href="#/signup">新規登録</a>
+              </>
+            ) : null}
           </div>
           <p className="muted landing-note">
-            サンプルはこの端末の中だけで完結します。ログインすると、クラウド保存と本物の招待リンクが使えます。
+            デモは架空の結婚式を使った操作体験です。入力した内容が本番データに保存されることはありません。
+            自分の結婚式の準備は、登録・ログインをして始められます。
           </p>
           <p className="landing-large">
-            <button type="button" className="btn-ghost" onClick={onTryLargeSample}>
-              120名の大規模サンプルで試す
-            </button>
+            <a className="btn-ghost" href="#/demo/large">
+              120名の大規模デモで試す
+            </a>
             <span className="muted">実際の披露宴規模（120名・15卓）での操作感を確認できます。</span>
           </p>
-
-          {showAuth && cloudEnabled && (
-            <div className="landing-auth">
-              <AuthPanel onSessionChange={onSessionChange} />
-            </div>
-          )}
         </div>
       </section>
     </main>
