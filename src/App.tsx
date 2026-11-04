@@ -743,7 +743,7 @@ function useRoute(): Route {
 }
 
 const ROUTE_TITLES: Record<Route['name'], string> = {
-  top: '席次まるっと | ゲスト名簿・出欠・席次表',
+  top: '席次まるっと | 結婚式の席次表・出欠管理・Web招待状（無料）',
   demo: 'デモ | 席次まるっと',
   login: 'ログイン | 席次まるっと',
   signup: '新規登録 | 席次まるっと',
