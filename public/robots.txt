@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tytanaka.github.io/sekiji-marutto/sitemap.xml
