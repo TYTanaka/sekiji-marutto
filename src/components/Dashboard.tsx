@@ -203,7 +203,7 @@ export function Dashboard({ onShowPending, onShowPrint }: { onShowPending?: () =
         <img className="hero-band-img" src={heroUrl} alt="" aria-hidden="true" />
         <div className="hero-band-body">
           <p className="hero-kicker">Wedding Day</p>
-          <p className="hero-names"><span className="nb">{state.info.groomName}</span> ＆ <span className="nb">{state.info.brideName}</span></p>
+          <h1 className="hero-names"><span className="nb">{state.info.groomName}</span> ＆ <span className="nb">{state.info.brideName}</span></h1>
           <p className="hero-meta">{state.info.date.replaceAll('-', '/')} ・ {state.info.venue}</p>
           {days !== null && days >= 0 && <p className="hero-chip">挙式まで あと{days}日</p>}
           {days !== null && days < 0 && <p className="hero-chip">ご結婚おめでとうございます</p>}

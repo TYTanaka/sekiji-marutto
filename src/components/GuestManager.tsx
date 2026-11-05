@@ -146,6 +146,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
 
   return (
     <section aria-label="ゲスト管理">
+      <h1 className="view-title">ゲスト・出欠</h1>
       {saved && (
         <div className="toast" role="status">保存しました</div>
       )}

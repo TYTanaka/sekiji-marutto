@@ -80,9 +80,9 @@ export function Invitation() {
       <div className="invitation">
         <img className="hero-img" src={heroUrl} alt="" aria-hidden="true" />
         <p className="inv-kicker">Wedding Invitation</p>
-        <h1 className="inv-names">
+        <h2 className="inv-names">
           <span className="nb">{info.groomName}</span> <span className="inv-amp">＆</span> <span className="nb">{info.brideName}</span>
-        </h1>
+        </h2>
         <div className="inv-divider" aria-hidden="true"><span>❀</span></div>
         <p className="inv-date">{formattedDate}</p>
         <p className="inv-venue">{info.venue}</p>

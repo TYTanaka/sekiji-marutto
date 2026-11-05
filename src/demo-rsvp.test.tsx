@@ -45,11 +45,19 @@ function openDemoInvitation() {
   fireEvent.click(screen.getByRole('tab', { name: '招待状' }))
 }
 
-async function openPreview() {
+/** 既定の見本＝未回答ゲスト（山本 悠介）のプレビューを開く */
+async function openFreshPreview() {
   openDemoInvitation()
   fireEvent.click(screen.getByRole('button', { name: 'ゲスト画面を見てみる' }))
   // 回答ページは遅延読み込みされるため、表示を待つ
-  await screen.findByText(/高橋 誠 様/)
+  await screen.findByText('山本 悠介 様', { exact: true })
+}
+
+/** 回答済みゲスト（高橋 誠）のプレビューを開く */
+async function openAnsweredPreview() {
+  openDemoInvitation()
+  fireEvent.click(screen.getByRole('button', { name: '回答済みのゲストの画面も見る' }))
+  await screen.findByText('高橋 誠 様', { exact: true })
 }
 
 function guestRow(name: string) {
@@ -70,25 +78,39 @@ describe('デモのゲスト画面プレビュー（F-1）', () => {
     setHash('#/')
   })
 
-  it('見本ボタンから回答ページが開き、招待状・席の案内・見本チップが表示される', async () => {
-    await openPreview()
-    // 招待状デザイン（式場・宛名）と、着席済みゲストの席ピル
-    expect(screen.getByText(/青山ウェディングホール/)).toBeTruthy()
-    expect(screen.getByText(/お席のご案内： A卓 1番席/)).toBeTruthy()
+  it('既定の見本は未回答ゲストの「素の」回答画面（初回回答の状態）で開く', async () => {
+    await openFreshPreview()
+    // まだ回答していないので、前回回答の事前選択も席の案内もない
+    expect(screen.queryByText(/お席のご案内/)).toBeNull()
+    expect(screen.getByRole('button', { name: '出席' }).getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: '欠席' }).getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByText('出席または欠席を選択してください。')).toBeTruthy()
+    expect((screen.getByRole('button', { name: '送信する' }) as HTMLButtonElement).disabled).toBe(true)
     // 見本であることの明示
     expect(screen.getByText('ゲスト画面の見本（デモ）')).toBeTruthy()
     expect(screen.getByText(/実際には送信されず、デモの中だけで反映されます/)).toBeTruthy()
-    // サンプル（高橋 誠）は回答済みのため、前回回答が出席として選択されている
-    expect(screen.getByRole('button', { name: '出席' }).getAttribute('aria-pressed')).toBe('true')
     // 本番データには触れず、クラウドも呼ばない
     expect(localStorage.getItem('sekiji-state-v2')).toBeNull()
     expect(fetchInvitationSpy).not.toHaveBeenCalled()
     expect(submitRsvpCloudSpy).not.toHaveBeenCalled()
   })
 
-  it('回答すると確認画面（クレジット付き）が出て、デモのゲスト一覧に反映される', async () => {
-    await openPreview()
-    fireEvent.click(screen.getByRole('button', { name: '欠席' }))
+  it('回答済みの見本では、前回の回答とお席のご案内が表示される', async () => {
+    await openAnsweredPreview()
+    // 招待状デザイン（式場・宛名）と、着席済みゲストの席ピル
+    expect(screen.getByText(/青山ウェディングホール/)).toBeTruthy()
+    expect(screen.getByText(/お席のご案内： A卓 1番席/)).toBeTruthy()
+    // サンプル（高橋 誠）は回答済みのため、前回回答が出席として選択されている
+    expect(screen.getByRole('button', { name: '出席' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByText(/前回の回答が選択されています/)).toBeTruthy()
+    expect(localStorage.getItem('sekiji-state-v2')).toBeNull()
+    expect(fetchInvitationSpy).not.toHaveBeenCalled()
+    expect(submitRsvpCloudSpy).not.toHaveBeenCalled()
+  })
+
+  it('未回答の見本で回答すると確認画面が出て、デモのゲスト一覧に反映される', async () => {
+    await openFreshPreview()
+    fireEvent.click(screen.getByRole('button', { name: '出席' }))
     fireEvent.change(screen.getByLabelText('アレルギー'), { target: { value: '卵' } })
     fireEvent.click(screen.getByRole('button', { name: '送信する' }))
 
@@ -99,11 +121,11 @@ describe('デモのゲスト画面プレビュー（F-1）', () => {
     expect(submitRsvpCloudSpy).not.toHaveBeenCalled()
     expect(fetchInvitationSpy).not.toHaveBeenCalled()
 
-    // デモに戻ると、ゲスト一覧で高橋 誠の回答が欠席に変わっている（連動）
+    // デモに戻ると、ゲスト一覧で山本 悠介の回答が出席に変わっている（連動）
     fireEvent.click(screen.getByRole('button', { name: 'デモに戻る' }))
     expect(screen.getByRole('button', { name: 'ゲスト画面を見てみる' })).toBeTruthy()
     fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
-    expect(guestRow('高橋 誠').getByRole('button', { name: '欠席' }).getAttribute('aria-pressed')).toBe('true')
+    expect(guestRow('山本 悠介').getByRole('button', { name: '出席' }).getAttribute('aria-pressed')).toBe('true')
     expect(localStorage.getItem('sekiji-state-v2')).toBeNull()
 
     // 再読み込み（再マウント）するとデモは初期サンプルに戻る
@@ -111,16 +133,16 @@ describe('デモのゲスト画面プレビュー（F-1）', () => {
     setHash('#/demo')
     render(<App />)
     fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
-    expect(guestRow('高橋 誠').getByRole('button', { name: '出席' }).getAttribute('aria-pressed')).toBe('true')
+    expect(guestRow('山本 悠介').getByRole('button', { name: '未回答' }).getAttribute('aria-pressed')).toBe('true')
     expect(localStorage.getItem('sekiji-state-v2')).toBeNull()
   })
 
   it('送信せずに戻ると回答は変わらない', async () => {
-    await openPreview()
+    await openFreshPreview()
     fireEvent.click(screen.getByRole('button', { name: '欠席' }))
     fireEvent.click(screen.getByRole('button', { name: 'デモに戻る' }))
     fireEvent.click(screen.getByRole('tab', { name: 'ゲスト・出欠' }))
-    expect(guestRow('高橋 誠').getByRole('button', { name: '出席' }).getAttribute('aria-pressed')).toBe('true')
+    expect(guestRow('山本 悠介').getByRole('button', { name: '未回答' }).getAttribute('aria-pressed')).toBe('true')
     expect(submitRsvpCloudSpy).not.toHaveBeenCalled()
     expect(localStorage.getItem('sekiji-state-v2')).toBeNull()
   })

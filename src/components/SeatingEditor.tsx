@@ -152,6 +152,7 @@ export function SeatingEditor() {
 
   return (
     <div className="seating-editor">
+      <h1 className="view-title">席次表</h1>
       {unassigned.length > 0 && (
         <div className="table-controls">
           <button type="button" className="btn btn-primary" onClick={applyAutoSeat}>

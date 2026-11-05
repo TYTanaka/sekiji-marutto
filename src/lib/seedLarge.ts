@@ -29,8 +29,17 @@ const ALLERGIES = ['甲殻類', '卵', '乳製品', 'そば', 'ナッツ類'];
  * 乱数を使わず決定的に生成する（テストで再現可能にするため）。
  * 出席者は全員、自動配置の提案で席に収まるよう構成している。
  */
+/** 開封トラッキング見本用の開封日時（未回答ゲストの一部に決定的に割り当てる） */
+const OPENED_STAMPS = [
+  '2026-10-26T19:42:00',
+  '2026-10-29T08:15:00',
+  '2026-11-01T21:03:00',
+  '2026-11-03T12:37:00',
+];
+
 export function createLargeSeedState(): AppState {
   const guests: Guest[] = [];
+  let pendingCount = 0;
   for (let i = 0; i < 120; i += 1) {
     const side: Side = i % 2 === 0 ? 'groom' : 'bride';
     const group = GROUPS[i % GROUPS.length];
@@ -39,6 +48,15 @@ export function createLargeSeedState(): AppState {
     const given = side === 'groom' ? givenPair[0] : givenPair[1];
     const relation = TITLES[group][i % TITLES[group].length];
     const rsvp = i % 13 === 12 ? 'declined' : i % 11 === 10 ? 'pending' : 'attending';
+    // 未回答ゲストの半数ほどに開封記録を持たせ、「開いたのに未回答／まだ開いていない」の
+    // 区分表示（催促サポート・招待リンク一覧）を大規模デモでも体験できるようにする
+    let openedAt: string | undefined;
+    if (rsvp === 'pending') {
+      pendingCount += 1;
+      if (pendingCount % 2 === 1) {
+        openedAt = OPENED_STAMPS[pendingCount % OPENED_STAMPS.length];
+      }
+    }
     guests.push({
       id: `lg${i + 1}`,
       name: `${surname} ${given}`,
@@ -50,6 +68,7 @@ export function createLargeSeedState(): AppState {
       memo: '',
       companions: i % 9 === 4 ? 1 : 0,
       inviteToken: `inv-lg${String(i + 1).padStart(3, '0')}`,
+      ...(openedAt ? { openedAt } : {}),
     });
   }
 

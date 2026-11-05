@@ -106,7 +106,7 @@ export function CheckinView() {
   return (
     <section className="view-enter">
       <div className="card checkin-head">
-        <h2>当日受付</h2>
+        <h1 className="view-title">当日受付</h1>
         <p className="muted">
           出席ゲストを卓順に表示しています。受付で到着を確認したらタップしてください。アレルギーのある方は目印つきで表示されます。
         </p>

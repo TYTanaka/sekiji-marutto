@@ -60,7 +60,7 @@ export function TasksView() {
       )}
 
       <header className="tasks-head">
-        <h2>結婚式の準備タスク</h2>
+        <h1 className="view-title">結婚式の準備タスク</h1>
         <p aria-live="polite">
           {done}/{total} 完了（{rate}%）
         </p>

@@ -92,8 +92,8 @@ h1, h2 {
   color: var(--ink);
 }
 
-h2 { font-size: var(--fs-xl); position: relative; padding-bottom: .55rem; }
-h2::after {
+h2, h1.view-title { font-size: var(--fs-xl); position: relative; padding-bottom: .55rem; }
+h2::after, h1.view-title::after {
   content: "";
   position: absolute;
   left: 0; bottom: 0;
@@ -586,6 +586,7 @@ textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
 
 .invitation h1, .invitation h2 { color: var(--rose-deep); letter-spacing: .14em; }
 .invitation h2::after { display: none; }
+.invitation h2.inv-names { padding-bottom: 0; }
 
 /* ===== ゲスト回答ページ ===== */
 .rsvp-page { max-width: 640px; margin-inline: auto; }
@@ -649,7 +650,7 @@ textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
   .modal-backdrop { padding: 16px; }
   .modal { max-height: calc(100dvh - 32px); padding: var(--sp-5); }
   .invitation { padding: 38px 20px; }
-  h2 { font-size: var(--fs-lg); }
+  h2, h1.view-title { font-size: var(--fs-lg); }
 }
 
 /* ===== 印刷 ===== */
@@ -702,6 +703,7 @@ textarea.input { min-height: 120px; resize: vertical; line-height: 1.7; }
 input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--rose-deep); flex-shrink: 0; }
 .hero-names {
   margin: 0 0 6px;
+  line-height: 1.75;
   font-family: var(--font-serif);
   font-size: clamp(1.5rem, 4.6vw, 2.1rem);
   font-weight: 600;
@@ -1448,7 +1450,7 @@ button:not([class]):hover { background: var(--rose-soft); }
 }
 
 /* ===== 当日受付 ===== */
-.checkin-head h2 { margin-top: 0; }
+.checkin-head h1, .checkin-head h2 { margin-top: 0; }
 .checkin-progress { font-weight: 800; font-size: var(--fs-md); margin: 10px 0 6px; }
 .checkin-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
 .checkin-controls .input { flex: 1 1 180px; }

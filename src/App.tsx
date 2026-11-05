@@ -88,10 +88,27 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   // デモの招待状タブから開く「ゲスト画面の見本」プレビュー（本番リンクは発行しない）
+  // 既定は「まだ回答していないゲスト」の素の画面。回答済みの見本（席の案内つき）にも切り替えられる。
+  // 対象ゲストは開いた時点で固定する（プレビュー中に回答しても対象が別のゲストへ
+  // 切り替わらないようにするため）。
   const [rsvpPreview, setRsvpPreview] = useState(false);
-  const sampleGuest = demo
-    ? (state.guests.find((g) => g.name === '高橋 誠') ?? state.guests[0])
+  const [previewGuestId, setPreviewGuestId] = useState<string | null>(null);
+  const freshSampleGuest = demo
+    ? state.guests.find((g) => g.rsvp === 'pending')
     : undefined;
+  const answeredSampleGuest = demo
+    ? (state.guests.find((g) => g.name === '高橋 誠') ??
+      state.guests.find((g) => g.rsvp === 'attending') ??
+      state.guests[0])
+    : undefined;
+  const sampleGuest = demo
+    ? (state.guests.find((g) => g.id === previewGuestId) ?? answeredSampleGuest)
+    : undefined;
+
+  function openRsvpPreview(guestId: string) {
+    setPreviewGuestId(guestId);
+    setRsvpPreview(true);
+  }
 
   useEffect(() => {
     if (rsvpPreview) window.scrollTo(0, 0);
@@ -340,7 +357,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
           {view === 'invitation' && demo && !(rsvpPreview && sampleGuest) && (
             <>
               <section className="card">
-                <h2>招待リンクについて（デモ）</h2>
+                <h1 className="view-title">招待リンクについて（デモ）</h1>
                 <p className="muted">
                   デモでは、本番用の招待リンクの発行・公開や、外部への送信はできません。
                   登録・ログインすると、ゲストごとの本物の招待リンクを発行して送れるようになります。
@@ -363,17 +380,32 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                     見本です。実際にはゲストごとに違うURLとQRコードが発行され、開封したかどうかも分かります。
                   </p>
                 </div>
-                {sampleGuest && (
+                {freshSampleGuest && (
                   <>
                     <button
                       type="button"
                       className="btn btn-primary"
-                      onClick={() => setRsvpPreview(true)}
+                      onClick={() => openRsvpPreview(freshSampleGuest.id)}
                     >
                       ゲスト画面を見てみる
                     </button>
                     <p className="muted">
-                      見本の回答ページを開いて、実際に出欠を回答するところまで試せます。送信されることはなく、デモの中だけで反映されます。
+                      まだ回答していないゲスト（見本：{freshSampleGuest.name} 様）の画面を開きます。
+                      ゲストが最初に見るのはこの画面です。実際に出欠を回答するところまで試せます。送信されることはなく、デモの中だけで反映されます。
+                    </p>
+                  </>
+                )}
+                {answeredSampleGuest && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => openRsvpPreview(answeredSampleGuest.id)}
+                    >
+                      回答済みのゲストの画面も見る
+                    </button>
+                    <p className="muted">
+                      回答済みのゲスト（見本：{answeredSampleGuest.name} 様）には、前回の回答とお席のご案内が表示されます。
                     </p>
                   </>
                 )}
@@ -406,7 +438,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
 
         {view === 'settings' && (
           <section className="card settings-card" aria-labelledby="settings-title">
-            <h2 id="settings-title">式の情報</h2>
+            <h1 id="settings-title" className="view-title">式の情報</h1>
             {demo && (
               <p className="muted">
                 デモでは式の基本情報（新郎新婦名・挙式日・会場など）は固定で、編集できません。

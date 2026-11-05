@@ -71,7 +71,7 @@ export function InviteLinks() {
 
   return (
     <section className="card">
-      <h2>ゲスト別 招待リンク</h2>
+      <h1 className="view-title">ゲスト別 招待リンク</h1>
       <p className="muted">
         ゲストごとの招待リンクをコピーするか、LINEで送れます。
         QRコードは紙の案内状などにご利用いただけます。「ゲスト画面」から、相手に見える招待ページをそのまま確認できます。

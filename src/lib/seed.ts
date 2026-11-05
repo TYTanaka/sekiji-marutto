@@ -152,6 +152,8 @@ export function createSeedState(): AppState {
         group: 'friends',
         title: '新郎の高校時代の友人',
         rsvp: 'pending',
+        // 開封トラッキングの見本：リンクは開いたが未回答（催促サポートで区分表示される）
+        openedAt: '2026-10-26T19:42:00',
         allergy: '',
         companions: 0,
         memo: '',
