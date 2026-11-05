@@ -178,115 +178,127 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
           }}
         >
           <h2>{editing ? 'ゲストを編集' : 'ゲストを追加'}</h2>
-          <label>
-            名前（必須）
-            <input
-              ref={nameInputRef}
-              className="input"
-              required
-              autoFocus
-              value={draft.name}
-              onChange={(event) => updateDraft('name', event.target.value)}
-            />
-          </label>
-          <label>
-            肩書き
-            <input
-              className="input"
-              value={draft.title}
-              onChange={(event) => updateDraft('title', event.target.value)}
-            />
-          </label>
-          <label>
-            新郎側・新婦側
-            <select
-              className="input"
-              value={draft.side}
-              onChange={(event) => updateDraft('side', event.target.value as Side)}
-            >
-              {sideOptions.map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            グループ
-            <select
-              className="input"
-              value={draft.group}
-              onChange={(event) =>
-                updateDraft('group', event.target.value as GuestGroup)
-              }
-            >
-              {groupOptions.map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            出欠
-            <select
-              className="input"
-              value={draft.rsvp}
-              onChange={(event) =>
-                updateDraft('rsvp', event.target.value as RsvpStatus)
-              }
-            >
-              {orderedRsvpOptions.map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            アレルギー
-            <input
-              className="input"
-              value={draft.allergy}
-              onChange={(event) => updateDraft('allergy', event.target.value)}
-            />
-          </label>
-          <label>
-            同伴者数
-            <input
-              className="input"
-              type="number"
-              min={0}
-              max={5}
-              step={1}
-              value={draft.companions}
-              onChange={(event) =>
-                updateDraft('companions', Number(event.target.value))
-              }
-            />
-          </label>
-          <label>
-            メモ
-            <textarea
-              className="input"
-              rows={3}
-              value={draft.memo}
-              onChange={(event) => updateDraft('memo', event.target.value)}
-            />
-          </label>
+          <div className="form-grid">
+            <div className="field">
+              <label htmlFor="guest-name">名前（必須）</label>
+              <input
+                id="guest-name"
+                ref={nameInputRef}
+                className="input"
+                required
+                autoFocus
+                value={draft.name}
+                onChange={(event) => updateDraft('name', event.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="guest-title">肩書き</label>
+              <input
+                id="guest-title"
+                className="input"
+                value={draft.title}
+                onChange={(event) => updateDraft('title', event.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="guest-side">新郎側・新婦側</label>
+              <select
+                id="guest-side"
+                className="select"
+                value={draft.side}
+                onChange={(event) => updateDraft('side', event.target.value as Side)}
+              >
+                {sideOptions.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="guest-group">グループ</label>
+              <select
+                id="guest-group"
+                className="select"
+                value={draft.group}
+                onChange={(event) =>
+                  updateDraft('group', event.target.value as GuestGroup)
+                }
+              >
+                {groupOptions.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="guest-rsvp">出欠</label>
+              <select
+                id="guest-rsvp"
+                className="select"
+                value={draft.rsvp}
+                onChange={(event) =>
+                  updateDraft('rsvp', event.target.value as RsvpStatus)
+                }
+              >
+                {orderedRsvpOptions.map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="field">
+              <label htmlFor="guest-allergy">アレルギー</label>
+              <input
+                id="guest-allergy"
+                className="input"
+                value={draft.allergy}
+                onChange={(event) => updateDraft('allergy', event.target.value)}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="guest-companions">同伴者数</label>
+              <input
+                id="guest-companions"
+                className="input"
+                type="number"
+                min={0}
+                max={5}
+                step={1}
+                value={draft.companions}
+                onChange={(event) =>
+                  updateDraft('companions', Number(event.target.value))
+                }
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="guest-memo">メモ</label>
+              <textarea
+                id="guest-memo"
+                className="input"
+                rows={3}
+                value={draft.memo}
+                onChange={(event) => updateDraft('memo', event.target.value)}
+              />
+            </div>
+          </div>
           {!draft.name.trim() && (
-            <p className="muted" style={{ margin: 0 }}>名前を入力すると保存できます</p>
+            <p className="muted">名前を入力すると保存できます</p>
           )}
-          <button type="submit" className="btn-primary" disabled={!draft.name.trim()}>
-            保存
-          </button>
-          {!editing && (
-            <button
-              type="button"
-              className="btn-ghost"
-              disabled={!draft.name.trim()}
-              onClick={() => saveGuest(true)}
-            >
-              保存して続けて追加
+          <div className="row-actions" style={{ marginLeft: 0 }}>
+            <button type="submit" className="btn-primary" disabled={!draft.name.trim()}>
+              保存
             </button>
-          )}
-          <button type="button" className="btn-ghost" onClick={closeForm}>
-            キャンセル
-          </button>
+            {!editing && (
+              <button
+                type="button"
+                className="btn-ghost"
+                disabled={!draft.name.trim()}
+                onClick={() => saveGuest(true)}
+              >
+                保存して続けて追加
+              </button>
+            )}
+            <button type="button" className="btn-ghost" onClick={closeForm}>
+              キャンセル
+            </button>
+          </div>
         </form>
       )}
 
@@ -300,7 +312,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
           onChange={(event) => setQuery(event.target.value)}
         />
         <select
-          className="input"
+          className="select"
           aria-label="新郎側・新婦側で絞り込み"
           value={sideFilter}
           onChange={(event) => setSideFilter(event.target.value as 'all' | Side)}
@@ -311,7 +323,7 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
           ))}
         </select>
         <select
-          className="input"
+          className="select"
           aria-label="出欠で絞り込み"
           value={rsvpFilter}
           onChange={(event) =>
@@ -329,7 +341,20 @@ export function GuestManager({ focusPendingSignal = 0 }: { focusPendingSignal?: 
       {state.guests.length === 0 ? (
         <p className="muted">ゲストがまだ登録されていません。ゲストを追加してください。</p>
       ) : filtered.length === 0 ? (
-        <p className="muted">該当するゲストがいません</p>
+        <p className="muted">
+          該当するゲストがいません
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => {
+              setQuery('');
+              setSideFilter('all');
+              setRsvpFilter('all');
+            }}
+          >
+            条件をクリア
+          </button>
+        </p>
       ) : (
         filtered.map((guest) => (
           <div className="guest-row" key={guest.id}>

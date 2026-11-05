@@ -134,7 +134,7 @@ export function CheckinView() {
             未到着のみ
           </label>
           {confirmingReset ? (
-            <span className="sample-confirm">
+            <span className="confirm-inline">
               <span>チェックをすべて外しますか？</span>
               <button type="button" className="btn btn-primary" onClick={resetAll}>
                 外す

@@ -166,7 +166,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'signup' }) {
                   )}
                 </fieldset>
               </form>
-              {error && <p role="alert">{error}</p>}
+              {error && <p className="form-error" role="alert">{error}</p>}
               {notice && <p role="status">{notice}</p>}
               <p className="auth-switch">
                 {isLogin ? (

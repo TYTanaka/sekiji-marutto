@@ -355,6 +355,8 @@ interface AppStateContextValue {
   undo: () => void;
   dismissUndo: () => void;
   savedAt: Date | null;
+  /** ローカル保存に失敗したかどうか（失敗時に「保存済み」と誤表示しないため） */
+  saveFailed: boolean;
   cloudPhase: CloudPhase;
   reportCloud: (phase: CloudPhase) => void;
   changes: ChangeEvent[];
@@ -445,6 +447,7 @@ export function AppStateProvider({
     }
   }, [mode]);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [cloudPhase, setCloudPhase] = useState<CloudPhase>('idle');
   const [undoNotice, setUndoNotice] = useState<UndoNotice | null>(null);
   const stateRef = useRef(state);
@@ -458,8 +461,12 @@ export function AppStateProvider({
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
-      // Keep the store usable when persistence is unavailable.
+      // 保存できなかったことを保持し、「保存済み」と誤表示しない。
+      // ストア自体はメモリ内で使い続けられるようにする。
+      setSaveFailed(true);
+      return;
     }
+    setSaveFailed(false);
     setSavedAt(new Date());
   }, [state, mode]);
 
@@ -524,6 +531,7 @@ export function AppStateProvider({
         undo,
         dismissUndo,
         savedAt,
+        saveFailed,
         cloudPhase,
         reportCloud,
         changes,

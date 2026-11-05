@@ -202,6 +202,7 @@ export function SeatingEditor() {
         <div className="celebration">全員の席が決まりました。</div>
       )}
 
+      {unassigned.length > 0 && (
       <section aria-labelledby="unassigned-guests-heading">
         <h2 id="unassigned-guests-heading">
           未配置のゲスト（出席） <span>{unassigned.length}名</span>
@@ -243,6 +244,7 @@ export function SeatingEditor() {
           ))}
         </div>
       </section>
+      )}
 
       {selectedGuest && (
         <p className="arm-hint">
@@ -305,7 +307,7 @@ export function SeatingEditor() {
                   </select>
                 </label>
                 {confirmingTableId === table.id ? (
-                  <>
+                  <span className="confirm-inline confirm-inline-flat">
                     <span className="confirm-inline-text">{`${table.name}を削除しますか？`}</span>
                     <button
                       type="button"
@@ -327,7 +329,7 @@ export function SeatingEditor() {
                     >
                       やめる
                     </button>
-                  </>
+                  </span>
                 ) : (
                   <button
                     type="button"

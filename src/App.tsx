@@ -38,7 +38,7 @@ const TasksView = lazy(() =>
 const RsvpPage = lazy(() => import('./components/RsvpPage'));
 
 function ViewLoading() {
-  return <p role="status">読み込んでいます…</p>;
+  return <p role="status">読み込み中…</p>;
 }
 import { createSeedState } from './lib/seed';
 import { createLargeSeedState } from './lib/seedLarge';
@@ -74,7 +74,7 @@ const MOBILE_LABELS: Record<View, string> = {
 };
 
 function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: AppState }) {
-  const { state, dispatch, dispatchWithUndo, savedAt, cloudPhase } = useAppState();
+  const { state, dispatch, dispatchWithUndo, savedAt, saveFailed, cloudPhase } = useAppState();
   const [view, setView] = useState<View>('dashboard');
   const [focusPending, setFocusPending] = useState(0);
   const { info } = state;
@@ -205,17 +205,22 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
   const timeText = savedAt
     ? `${savedAt.getHours()}:${String(savedAt.getMinutes()).padStart(2, '0')}`
     : '';
+  // ローカル保存に失敗した場合は、クラウド側の文言（「この端末には保存済み」等）より
+  // 優先して専用文言を出す（保存できていないのに保存済みと誤認させないため）
+  const saveIsError = !demo && saveFailed;
   const saveText = demo
     ? ''
-    : cloudPhase === 'syncing'
-      ? 'クラウドへ保存中…'
-      : cloudPhase === 'error'
-        ? 'クラウド保存に失敗（この端末には保存済み）'
-        : cloudPhase === 'synced'
-          ? `✓ クラウドに保存済み ${timeText}`
-          : savedAt
-            ? `✓ 保存済み ${timeText}`
-            : '';
+    : saveFailed
+      ? '保存できませんでした'
+      : cloudPhase === 'syncing'
+        ? 'クラウドへ保存中…'
+        : cloudPhase === 'error'
+          ? 'クラウド保存に失敗（この端末には保存済み）'
+          : cloudPhase === 'synced'
+            ? `✓ クラウドに保存済み ${timeText}`
+            : savedAt
+              ? `✓ 保存済み ${timeText}`
+              : '';
 
   return (
     <>
@@ -225,7 +230,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
         </a>
         {demo && <span className="demo-badge">デモ</span>}
         {saveText && (
-          <span className="save-status" role="status">
+          <span className={saveIsError ? 'save-status save-status-error' : 'save-status'} role="status">
             {saveText}
           </span>
         )}
@@ -495,7 +500,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                     120名・15卓の披露宴データを読み込んで、表示や席次の動作を確認できます。出席者は自動配置済みの状態で読み込まれます。
                   </p>
                   {confirmingLoad ? (
-                    <div className="sample-confirm">
+                    <div className="confirm-inline">
                       <span>現在のデータは置き換わります（クラウド保存も同様）。本当に読み込みますか？</span>
                       <button type="button" className="btn btn-primary" onClick={loadLargeSample}>
                         読み込む
@@ -537,7 +542,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                     <p className="backup-error" role="alert">{backupError}</p>
                   )}
                   {pendingBackup && (
-                    <div className="sample-confirm">
+                    <div className="confirm-inline">
                       <span>{`「${pendingBackup.info.groomName} ・ ${pendingBackup.info.brideName}」のバックアップです。現在のデータは置き換わります。本当に読み込みますか？`}</span>
                       <button type="button" className="btn btn-primary" onClick={applyBackup}>
                         読み込む
@@ -596,7 +601,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                     すべてのゲスト・席次・式の情報が最初のサンプルに戻ります。クラウド保存している場合はそちらも初期化されます。実行直後であれば「元に戻す」で取り消せます。
                   </p>
                   {confirmingReset ? (
-                    <div className="sample-confirm">
+                    <div className="confirm-inline">
                       <span>本当に初期状態に戻しますか？</span>
                       <button type="button" className="btn-danger" onClick={resetData}>
                         初期状態に戻す

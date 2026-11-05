@@ -102,6 +102,27 @@ export function InviteLinks() {
         <span className="muted link-count">{visibleGuests.length} 名を表示</span>
       </div>
 
+      {visibleGuests.length === 0 &&
+        (state.guests.length === 0 ? (
+          <p className="muted">
+            ゲストがまだ登録されていません。「ゲスト」画面でゲストを追加すると、ここに招待リンクが表示されます。
+          </p>
+        ) : (
+          <p className="muted">
+            条件に合うゲストがいません。
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                setQuery('');
+                setFilter('all');
+              }}
+            >
+              条件をクリア
+            </button>
+          </p>
+        ))}
+
       {visibleGuests.map((guest) => {
         const id = String(guest.id);
         const url = inviteUrlFor(guest.inviteToken);
@@ -140,7 +161,7 @@ export function InviteLinks() {
 
             <div className="invite-actions">
               <button
-                className="btn btn-primary"
+                className="btn btn-ghost"
                 type="button"
                 aria-label={`${guest.name}さんの招待リンクをコピー`}
                 onClick={() => void copyText(id, url)}

@@ -116,7 +116,7 @@ export function PrintView() {
               </p>
             )}
             {confirmingRecord ? (
-              <span className="sample-confirm">
+              <span className="confirm-inline">
                 <span>現在の内容を提出版として記録しますか？（前回の記録は上書きされます）</span>
                 <button type="button" className="btn btn-primary" onClick={recordSnapshot}>
                   記録する

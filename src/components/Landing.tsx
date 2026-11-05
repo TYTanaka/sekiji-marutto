@@ -85,9 +85,6 @@ export function Landing() {
           </div>
 
           <div className="landing-cta">
-            <a className="btn-primary landing-cta-main" href="#/demo">
-              デモで試してみる
-            </a>
             {cloudEnabled && sessionEmail ? (
               <a className="btn-ghost" href="#/app">
                 管理画面を開く（ログイン中）
@@ -98,16 +95,14 @@ export function Landing() {
                 <a className="btn-ghost" href="#/signup">新規登録</a>
               </>
             ) : null}
+            <a className="btn-ghost" href="#/demo/large">
+              120名の大規模デモで試す
+            </a>
           </div>
           <p className="muted landing-note">
             デモは架空の結婚式を使った操作体験です。入力した内容が本番データに保存されることはありません。
             自分の結婚式の準備は、登録・ログインをして始められます。
-          </p>
-          <p className="landing-large">
-            <a className="btn-ghost" href="#/demo/large">
-              120名の大規模デモで試す
-            </a>
-            <span className="muted">実際の披露宴規模（120名・15卓）での操作感を確認できます。</span>
+            大規模デモでは、実際の披露宴規模（120名・15卓）での操作感を確認できます。
           </p>
         </div>
       </section>

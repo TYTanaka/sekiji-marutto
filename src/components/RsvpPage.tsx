@@ -57,7 +57,7 @@ export function ServiceCredit() {
 }
 
 type Choice = 'attending' | 'declined';
-type PageStatus = 'loading' | 'notFound' | 'ready' | 'submitted';
+type PageStatus = 'loading' | 'notFound' | 'error' | 'ready' | 'submitted';
 
 function formatJapaneseDate(value: string): string {
   if (!value) return '';
@@ -88,6 +88,8 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
   const [submitting, setSubmitting] = useState(false);
   const [summary, setSummary] = useState<{ rsvp: Choice; companions: number; allergy: string; memo: string } | null>(null);
   const [error, setError] = useState('');
+  // 読み込み失敗時の再試行用（増やすと読み込みeffectが再実行される）
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -192,7 +194,9 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
           });
         }
       } catch {
-        if (!cancelled) setStatus('notFound');
+        // 通信エラーは「招待が見つからない」とは別状態にする
+        // （誤認して回答を諦めないよう、再読み込みの導線を出す）
+        if (!cancelled) setStatus('error');
       }
     }
 
@@ -200,7 +204,12 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
     return () => {
       cancelled = true;
     };
-  }, [token, demoGuestId]);
+  }, [token, demoGuestId, loadAttempt]);
+
+  function retryLoad() {
+    loadedKeyRef.current = null;
+    setLoadAttempt((n) => n + 1);
+  }
 
   async function handleSubmit() {
     if (!invitation || choice === null || submitting) return;
@@ -290,6 +299,22 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
             </p>
           )}
           <ServiceCredit />
+        </section>
+      </main>
+    );
+  }
+
+  if (status === 'error') {
+    return (
+      <main className="rsvp-page">
+        {demoPreview && <DemoSampleNotice onClose={onClose} />}
+        <section className="card">
+          <p>
+            読み込みに失敗しました。電波の良い場所でもう一度開いてください。
+          </p>
+          <button type="button" className="btn btn-primary" onClick={retryLoad}>
+            もう一度読み込む
+          </button>
         </section>
       </main>
     );
@@ -394,7 +419,7 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
             <textarea id="rsvp-memo" className="input" rows={3} value={memo} onChange={(event) => setMemo(event.target.value)} />
           </div>
         </fieldset>
-        {error && <p role="alert">{error}</p>}
+        {error && <p className="form-error" role="alert">{error}</p>}
         <button className="btn btn-primary" type="submit" disabled={choice === null || submitting}>
           {submitting ? '送信中…' : '送信する'}
         </button>
