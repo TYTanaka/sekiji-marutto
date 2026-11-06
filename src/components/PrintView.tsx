@@ -9,6 +9,7 @@ import { GROUP_LABELS, RSVP_LABELS, SIDE_LABELS } from '../types';
 import {
   takeSubmissionSnapshot,
   diffSubmission,
+  createDemoSubmissionSnapshot,
   type SubmissionSnapshot,
 } from '../lib/submission';
 import { buildGuestsCsv, buildSeatingCsv, downloadCsv } from '../lib/csv';
@@ -16,6 +17,24 @@ import { summarize } from '../lib/stats';
 import { scopedDeviceKey, legacyScopedDeviceKey } from '../lib/deviceKeys';
 
 const SUBMISSION_KEY = 'sekiji-submission-v1';
+const PRINT_MODE_KEY = 'sekiji-print-mode-v1';
+
+type PrintMode = 'chart' | 'pack';
+
+function loadPrintMode(key: string, legacyKey: string): PrintMode {
+  try {
+    // 式ごとの保存を優先し、無ければ端末の最終モード（式をまたぐ表示の好み）を引き継ぐ。
+    // デモは再読み込みのたびに式IDが変わるため、この引き継ぎで保持が効く。
+    const raw =
+      localStorage.getItem(key) ??
+      localStorage.getItem(legacyKey) ??
+      localStorage.getItem(PRINT_MODE_KEY);
+    if (raw === 'pack' || raw === 'chart') return raw;
+  } catch {
+    // No stored preference.
+  }
+  return 'chart';
+}
 
 function loadSnapshot(key: string, legacyKey: string): SubmissionSnapshot | null {
   try {
@@ -46,15 +65,39 @@ function formatDateTime(iso: string): string {
 }
 
 export function PrintView() {
-  const { state } = useAppState();
+  const { state, mode: storeMode } = useAppState();
   const { groomName, brideName, date, venue } = state.info;
   const sum = summarize(state);
   const unassigned = unassignedAttending(state);
   // 提出スナップショットは式ごとに端末内キーを分離する
   const storageKey = scopedDeviceKey(SUBMISSION_KEY, state);
-  const [mode, setMode] = useState<'chart' | 'pack'>('chart');
-  const [snapshot, setSnapshot] = useState<SubmissionSnapshot | null>(() =>
-    loadSnapshot(storageKey, legacyScopedDeviceKey(SUBMISSION_KEY, state.info)),
+  // 印刷モード（席次表のみ／提出パック）も式ごとに端末内へ保持し、
+  // 次に開いたときは前回のモードで開く（提出作業は複数日にわたるため）
+  const printModeKey = scopedDeviceKey(PRINT_MODE_KEY, state);
+  const [mode, setModeState] = useState<PrintMode>(() =>
+    loadPrintMode(
+      printModeKey,
+      legacyScopedDeviceKey(PRINT_MODE_KEY, state.info),
+    ),
+  );
+  const setMode = (next: PrintMode) => {
+    setModeState(next);
+    try {
+      localStorage.setItem(printModeKey, next);
+      // 端末の最終モードとしても残す（loadPrintMode の引き継ぎ用）
+      localStorage.setItem(PRINT_MODE_KEY, next);
+    } catch {
+      // Persistence is best-effort.
+    }
+  };
+  const [snapshot, setSnapshot] = useState<SubmissionSnapshot | null>(
+    () =>
+      loadSnapshot(
+        storageKey,
+        legacyScopedDeviceKey(SUBMISSION_KEY, state.info),
+      ) ??
+      // デモでは「提出済み＋その後の変更」を最初から体験できる見本を用意する
+      (storeMode === 'demo' ? createDemoSubmissionSnapshot(state) : null),
   );
   const [confirmingRecord, setConfirmingRecord] = useState(false);
 

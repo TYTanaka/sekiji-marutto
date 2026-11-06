@@ -5,6 +5,9 @@ import { render, screen, cleanup, fireEvent } from '@testing-library/react'
 const h = vi.hoisted(() => ({
   rows: [] as unknown[],
   insertCalls: [] as { owner_id: string; state: unknown }[],
+  updateCalls: [] as { state: unknown; updated_at: string }[],
+  /** update の select が返す行（空配列にすると楽観ロックの競合を再現できる） */
+  updateRows: [{ id: 'row-1' }] as unknown[],
   session: null as null | { user: { id: string; email: string } },
 }))
 
@@ -56,7 +59,13 @@ vi.mock('../lib/supabase', () => {
             }),
           }
         },
-        update: () => ({ eq: async () => ({ error: null }) }),
+        update: (payload: { state: unknown; updated_at: string }) => {
+          h.updateCalls.push(payload)
+          const chain: Record<string, unknown> = {}
+          chain.eq = () => chain
+          chain.select = async () => ({ data: h.updateRows, error: null })
+          return chain
+        },
       })),
       channel: vi.fn(() => channelObj),
       removeChannel: vi.fn(async () => ({})),
@@ -76,6 +85,8 @@ describe('CloudSync（クラウド保存の分岐）', () => {
     localStorage.clear()
     h.rows = []
     h.insertCalls = []
+    h.updateCalls = []
+    h.updateRows = [{ id: 'row-1' }]
     h.session = USER
     window.location.hash = '#/app'
   })
@@ -93,7 +104,10 @@ describe('CloudSync（クラウド保存の分岐）', () => {
 
     render(<App />)
 
-    expect(await screen.findByText(/クラウド新郎/)).toBeTruthy()
+    // フルスイート並列実行時は初回描画が重いため、待ち時間を長めに取る
+    expect(
+      await screen.findByText(/クラウド新郎/, {}, { timeout: 8000 }),
+    ).toBeTruthy()
     expect(h.insertCalls).toHaveLength(0)
     expect(screen.queryByText('この端末に保存されたデータがあります')).toBeNull()
   })
@@ -105,7 +119,11 @@ describe('CloudSync（クラウド保存の分岐）', () => {
     render(<App />)
 
     expect(
-      await screen.findByText('この端末に保存されたデータがあります'),
+      await screen.findByText(
+        'この端末に保存されたデータがあります',
+        {},
+        { timeout: 8000 },
+      ),
     ).toBeTruthy()
     // 本人が選ぶまでは挿入しない
     expect(h.insertCalls).toHaveLength(0)
@@ -118,7 +136,11 @@ describe('CloudSync（クラウド保存の分岐）', () => {
 
     render(<App />)
     fireEvent.click(
-      await screen.findByRole('button', { name: 'この端末のデータをクラウドに取り込む' }),
+      await screen.findByRole(
+        'button',
+        { name: 'この端末のデータをクラウドに取り込む' },
+        { timeout: 8000 },
+      ),
     )
 
     await vi.waitFor(() => expect(h.insertCalls).toHaveLength(1))
@@ -135,7 +157,11 @@ describe('CloudSync（クラウド保存の分岐）', () => {
 
     render(<App />)
     fireEvent.click(
-      await screen.findByRole('button', { name: '空の状態ではじめる' }),
+      await screen.findByRole(
+        'button',
+        { name: '空の状態ではじめる' },
+        { timeout: 8000 },
+      ),
     )
 
     await vi.waitFor(() => expect(h.insertCalls).toHaveLength(1))
@@ -157,6 +183,79 @@ describe('CloudSync（クラウド保存の分岐）', () => {
     const inserted = h.insertCalls[0].state as AppState
     expect(inserted.guests).toHaveLength(0)
     expect(screen.queryByText('この端末に保存されたデータがあります')).toBeNull()
+  })
+
+  it('競合がなければ編集は通常どおり保存され、競合バナーは出ない', async () => {
+    const mine: AppState = {
+      ...createEmptyState(),
+      info: {
+        ...createEmptyState().info,
+        groomName: '保存前の新郎',
+        brideName: '保存前の新婦',
+      },
+    }
+    h.rows = [{ id: 'row-9', state: mine, updated_at: '2026-11-01T00:00:00Z' }]
+
+    render(<App />)
+    fireEvent.click(await screen.findByRole('tab', { name: '設定' }))
+    const groomInput = (await screen.findByLabelText(
+      '新郎のお名前',
+    )) as HTMLInputElement
+    await vi.waitFor(() => expect(groomInput.value).toBe('保存前の新郎'))
+
+    fireEvent.change(groomInput, { target: { value: '編集後の新郎' } })
+
+    await vi.waitFor(
+      () => expect(h.updateCalls.length).toBeGreaterThan(0),
+      { timeout: 5000 },
+    )
+    const saved = h.updateCalls[0].state as AppState
+    expect(saved.info.groomName).toBe('編集後の新郎')
+    expect(screen.queryByText('他の端末で更新されました')).toBeNull()
+  })
+
+  it('保存時に他端末の更新と競合したら、無言で上書きせず通知して相手の状態を取り込む', async () => {
+    const empty = createEmptyState()
+    const guest = {
+      ...createSeedState().guests[0],
+      rsvp: 'pending' as const,
+    }
+    const mine: AppState = {
+      ...empty,
+      info: { ...empty.info, groomName: '自分の新郎', brideName: '自分の新婦' },
+      guests: [guest],
+    }
+    h.rows = [{ id: 'row-9', state: mine, updated_at: '2026-11-01T00:00:00Z' }]
+
+    render(<App />)
+    fireEvent.click(await screen.findByRole('tab', { name: '設定' }))
+    const groomInput = (await screen.findByLabelText(
+      '新郎のお名前',
+    )) as HTMLInputElement
+    await vi.waitFor(() => expect(groomInput.value).toBe('自分の新郎'))
+
+    // 他端末が先に保存した状態（式情報＋ゲストの出欠が変わっている）を用意し、
+    // 自分の更新は楽観ロックで0件＝競合になるよう仕向ける
+    const theirs: AppState = {
+      ...mine,
+      info: { ...mine.info, groomName: '相手の新郎' },
+      guests: [{ ...guest, rsvp: 'attending' as const }],
+    }
+    h.rows = [
+      { id: 'row-9', state: theirs, updated_at: '2026-11-02T00:00:00Z' },
+    ]
+    h.updateRows = []
+
+    fireEvent.change(groomInput, { target: { value: '自分の編集' } })
+
+    // 競合が通知され、相手の状態が取り込まれる（自分の未保存の編集で上書きされない）
+    expect(
+      await screen.findByText('他の端末で更新されました', {}, { timeout: 5000 }),
+    ).toBeTruthy()
+    await vi.waitFor(() => expect(groomInput.value).toBe('相手の新郎'))
+    expect(h.updateCalls.length).toBeGreaterThan(0)
+    // 取り込んだ変更の要約（ゲストの出欠）もバナーに出る
+    expect(screen.getByText(/出欠： 未回答 → 出席/)).toBeTruthy()
   })
 })
 

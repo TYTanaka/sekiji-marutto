@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { useAppState, openedAtFor } from '../store/appState';
-import { summarize, nextActionHint } from '../lib/stats';
+import {
+  summarize,
+  nextActionHint,
+  seatShortage,
+  totalSeats,
+} from '../lib/stats';
+import { groupChanges } from '../lib/changes';
 import { tableFill } from '../lib/seating';
 import {
   buildReminderMessage,
@@ -24,7 +30,7 @@ function daysUntil(iso: string): number | null {
   return Math.round((target.getTime() - today.getTime()) / 86400000);
 }
 
-export function Dashboard({ onShowPending, onShowPrint }: { onShowPending?: () => void; onShowPrint?: () => void }) {
+export function Dashboard({ onShowPending, onShowPrint, onShowSeating }: { onShowPending?: () => void; onShowPrint?: () => void; onShowSeating?: () => void }) {
   const { state, changes, clearChanges, opens, dispatch, dispatchWithUndo, mode } = useAppState();
   const isDemo = mode === 'demo';
   const sum = summarize(state);
@@ -33,6 +39,9 @@ export function Dashboard({ onShowPending, onShowPrint }: { onShowPending?: () =
   const openedPending = pendingGuests.filter((g) => openedAtFor(opens, g));
   const unopenedPending = pendingGuests.filter((g) => !openedAtFor(opens, g));
   const days = daysUntil(state.info.date);
+  const shortage = seatShortage(state);
+  const seatsTotal = totalSeats(state);
+  const changeGroups = groupChanges(changes);
 
   function reminderRow(guest: Guest, text: string) {
     if (isDemo) {
@@ -217,6 +226,20 @@ export function Dashboard({ onShowPending, onShowPrint }: { onShowPending?: () =
         <div className="hint">{nextActionHint(state)}</div>
       )}
 
+      {shortage > 0 && (
+        <div className="card capacity-warning" role="alert">
+          <h2>{`席が${shortage}名分足りません`}</h2>
+          <p className="muted">
+            {`出席予定は延べ${sum.attendingHeads}名ですが、席は合計${seatsTotal}席です。このままでは${shortage}名分の席が用意できません。席次表で卓を追加するか、卓の席数を増やしてください。`}
+          </p>
+          {onShowSeating && (
+            <button type="button" className="btn btn-primary" onClick={onShowSeating}>
+              席次表で卓を追加する
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="grid-stats">
         <div className="stat-card">
           <div className="stat-num">{sum.replyRate}%</div>
@@ -257,26 +280,34 @@ export function Dashboard({ onShowPending, onShowPrint }: { onShowPending?: () =
             </button>
           </div>
           <p className="muted changes-note">
-            ゲストの回答内容にあった変更です。席次や式場への連絡に影響がないか確認してください。
+            回答や記録にあった変更です。席次や式場への連絡に影響がないか確認してください。同じゲストの連続した変更は、最終状態にまとめて表示しています。
           </p>
           <ul className="changes-list">
-            {changes.slice(0, 8).map((change) => (
-              <li key={change.id}>
+            {changeGroups.slice(0, 8).map((group) => (
+              <li key={`${group.guestId}-${group.at}`}>
                 <span className="changes-when">
                   {(() => {
-                    const d = new Date(change.at);
+                    const d = new Date(group.at);
                     const pad = (n: number) => String(n).padStart(2, '0');
                     return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
                   })()}
                 </span>
                 <span>
-                  <strong>{change.guestName}</strong> さん：{change.text}
+                  <strong>{group.guestName}</strong> さん：{group.texts.join('／')}
+                  {group.source && (
+                    <span className="changes-source">
+                      {group.source === 'guest' ? 'ゲスト本人の回答' : '主催者の記録'}
+                    </span>
+                  )}
+                  {group.count > 1 && (
+                    <span className="changes-source">{`${group.count}回変更`}</span>
+                  )}
                 </span>
               </li>
             ))}
           </ul>
-          {changes.length > 8 && (
-            <p className="muted">{`ほか ${changes.length - 8} 件の変更があります`}</p>
+          {changeGroups.length > 8 && (
+            <p className="muted">{`ほか ${changeGroups.length - 8} 件の変更があります`}</p>
           )}
         </div>
       )}

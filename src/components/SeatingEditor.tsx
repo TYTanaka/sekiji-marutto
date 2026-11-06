@@ -9,7 +9,7 @@ import {
   unassignedAttending,
   tableFill,
 } from '../lib/seating';
-import { summarize } from '../lib/stats';
+import { summarize, seatShortage, totalSeats } from '../lib/stats';
 import type { Guest, TableDef } from '../types';
 
 function tableSuggestion(tables: TableDef[]): string {
@@ -48,6 +48,8 @@ export function SeatingEditor() {
   const unassigned = unassignedAttending(state);
   const suggestion = tableSuggestion(state.tables);
   const summary = summarize(state);
+  const shortage = seatShortage(state);
+  const seatsTotal = totalSeats(state);
 
   function beginDrag(
     guest: Guest,
@@ -153,6 +155,22 @@ export function SeatingEditor() {
   return (
     <div className="seating-editor">
       <h1 className="view-title">席次表</h1>
+      {shortage > 0 && (
+        <div className="hint capacity-alert" role="alert">
+          {`席が${shortage}名分足りません（出席予定 延べ${summary.attendingHeads}名／全${seatsTotal}席）。卓を追加するか、卓の席数を増やしてください。`}
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() =>
+              document
+                .getElementById('add-table-controls')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }
+          >
+            卓を追加する
+          </button>
+        </div>
+      )}
       {unassigned.length > 0 && (
         <div className="table-controls">
           <button type="button" className="btn btn-primary" onClick={applyAutoSeat}>
@@ -438,7 +456,7 @@ export function SeatingEditor() {
         })}
       </div>
 
-      <div className="add-table-controls">
+      <div className="add-table-controls" id="add-table-controls">
         <input
           aria-label="追加する卓の名前"
           placeholder={`次は ${suggestion}`}

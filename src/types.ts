@@ -31,6 +31,8 @@ export interface WeddingInfo {
   date: string;
   venue: string;
   message: string;
+  /** 主催者が設定した回答期限（YYYY-MM-DD）。未設定なら期限なし（締め切らない） */
+  rsvpDeadline?: string;
 }
 
 export type Assignments = Record<

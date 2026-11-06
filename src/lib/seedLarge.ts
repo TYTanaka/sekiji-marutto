@@ -27,7 +27,8 @@ const ALLERGIES = ['甲殻類', '卵', '乳製品', 'そば', 'ナッツ類'];
 /**
  * 大規模披露宴（120名・15卓）の検証用サンプル。
  * 乱数を使わず決定的に生成する（テストで再現可能にするため）。
- * 出席者は全員、自動配置の提案で席に収まるよう構成している。
+ * 出席者は自動配置の提案で席に収まるよう構成し、デモで自動配置を
+ * 体験できるよう数名だけ未配置の状態で読み込まれる。
  */
 /** 開封トラッキング見本用の開封日時（未回答ゲストの一部に決定的に割り当てる） */
 const OPENED_STAMPS = [
@@ -93,5 +94,16 @@ export function createLargeSeedState(): AppState {
     assignments: {},
   };
 
-  return { ...base, assignments: proposeAssignments(base) };
+  const assignments = proposeAssignments(base);
+  // デモでは「席次を自動配置する」→配置の理由まで体験できるよう、
+  // 出席者のうち数名（同伴者なし・出席者リストで等間隔に数名）だけ未配置で開始する。
+  // 残りの席は提案どおりに埋まっているので、空いた席へそのまま自動配置できる。
+  const attendingSingles = guests.filter(
+    (g) => g.rsvp === 'attending' && g.companions === 0,
+  );
+  attendingSingles.forEach((guest, index) => {
+    if (index % 13 === 6) delete assignments[guest.id];
+  });
+
+  return { ...base, assignments };
 }

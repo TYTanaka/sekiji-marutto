@@ -74,49 +74,115 @@ export function proposeAssignmentsWithReasons(state: AppState): ProposalWithReas
   const reasons: Record<string, string[]> = {};
   const placedByTableBucket = new Map<string, Guest[]>();
 
+  // 卓ごとに「すでに座っているゲスト」（既存配置＋この提案で置いた分）を追う。
+  // 卓選びに使う：同じ側・同じグループが集まっている卓を優先し、
+  // 反対側のゲストがいる卓は避ける（作法チェックの混在指摘を出さないため）。
+  const tableGuests = new Map<string, Guest[]>();
+  for (const table of state.tables) tableGuests.set(table.id, []);
+  for (const [guestId, a] of Object.entries(state.assignments)) {
+    const placed = guestsById.get(guestId);
+    if (placed) tableGuests.get(a.tableId)?.push(placed);
+  }
+
+  interface Candidate {
+    tableId: string;
+    start: number;
+    free: number;
+    /** 同じ「側×グループ」のゲストがその卓に何人いるか */
+    affinity: number;
+    /** 反対側のゲストがその卓にいるか */
+    otherSide: boolean;
+    /** その卓にすでに座っている役職者・主賓の人数 */
+    vipCount: number;
+  }
+
+  /**
+   * 負なら a のほうが良い席。
+   * 役職者フェーズ：反対側がいない卓 → 上座に近い席 → 役職者の少ない卓
+   * （役職者を卓ごとに分散させ、全員が上座側に収まるようにする）。
+   * 通常フェーズ：反対側がいない卓 → 「空席＋同じ塊の人数」のスコアが高い卓
+   * （同じ塊を寄せつつ、1卓に詰め込みすぎて人数バランスが崩れないようにする）。
+   */
+  const compareCandidate = (a: Candidate, b: Candidate, isVip: boolean): number => {
+    if (a.otherSide !== b.otherSide) return a.otherSide ? 1 : -1;
+    if (isVip) {
+      if (a.start !== b.start) return a.start - b.start;
+      if (a.vipCount !== b.vipCount) return a.vipCount - b.vipCount;
+      return b.free - a.free;
+    }
+    const scoreA = a.free + a.affinity;
+    const scoreB = b.free + b.affinity;
+    if (scoreA !== scoreB) return scoreB - scoreA;
+    if (a.free !== b.free) return b.free - a.free;
+    return a.start - b.start;
+  };
+
+  const placeGuest = (guest: Guest, isVip: boolean): void => {
+    const size = partySize(guest);
+    let best: Candidate | null = null;
+    for (const table of state.tables) {
+      const start = freeRunStart(table.id, table.seats, size);
+      if (start < 0) continue;
+      const placed = tableGuests.get(table.id) ?? [];
+      const candidate: Candidate = {
+        tableId: table.id,
+        start,
+        free: freeSeats(table.id, table.seats).length,
+        affinity: placed.filter(
+          (g) => g.side === guest.side && g.group === guest.group,
+        ).length,
+        otherSide: placed.some((g) => g.side !== guest.side),
+        vipCount: placed.filter((g) => VIP_PATTERN.test(g.title)).length,
+      };
+      if (!best || compareCandidate(candidate, best, isVip) < 0) {
+        best = candidate;
+      }
+    }
+    if (!best) return;
+    const seatIndex = best.start;
+    proposal[guest.id] = { tableId: best.tableId, seatIndex };
+    for (let offset = 0; offset < size; offset += 1) {
+      occupied.get(best.tableId)?.add(seatIndex + offset);
+    }
+    tableGuests.get(best.tableId)?.push(guest);
+
+    const guestReasons: string[] = [];
+    if (seatPriority(guest) === 0) {
+      guestReasons.push('主賓・役職者として上座側へ');
+    } else if (seatIndex === 0) {
+      guestReasons.push('上座に配置');
+    }
+    if (size > 1) {
+      guestReasons.push(`同伴者${size - 1}名と隣同士になるよう配置`);
+    }
+    const bucketKey = `${best.tableId}:${guest.side}:${guest.group}`;
+    const sameBucket = placedByTableBucket.get(bucketKey) ?? [];
+    if (sameBucket.length > 0) {
+      const names = sameBucket.slice(0, 2).map((g) => `${g.name}さん`).join('・');
+      guestReasons.push(
+        `同じ${SIDE_LABELS[guest.side]}・${GROUP_LABELS[guest.group]}の${names}と同じ卓`,
+      );
+    }
+    if (guestReasons.length === 0) {
+      guestReasons.push('空席のバランスを考慮して配置');
+    }
+    reasons[guest.id] = guestReasons;
+    placedByTableBucket.set(bucketKey, [...sameBucket, guest]);
+  };
+
+  // 役職者・主賓は先に配置する。後から来た役職者が、すでに埋まった卓の
+  // 下座側しか空いていない、という事態を避けるため。
+  const vipGuests: Guest[] = [];
+  const otherGuests: Guest[] = [];
   for (const bucket of sortedBuckets) {
     const ordered = [...bucket].sort((a, b) => seatPriority(a) - seatPriority(b));
     for (const guest of ordered) {
-      const size = partySize(guest);
-      // 本人＋同伴者が隣同士で座れる卓のうち、空席が最も多い卓を選ぶ（同数なら定義順）
-      let best: { tableId: string; seats: number[]; start: number } | null = null;
-      for (const table of state.tables) {
-        const start = freeRunStart(table.id, table.seats, size);
-        if (start < 0) continue;
-        const seats = freeSeats(table.id, table.seats);
-        if (!best || seats.length > best.seats.length) best = { tableId: table.id, seats, start };
-      }
-      if (!best) continue;
-      const seatIndex = best.start;
-      proposal[guest.id] = { tableId: best.tableId, seatIndex };
-      for (let offset = 0; offset < size; offset += 1) {
-        occupied.get(best.tableId)?.add(seatIndex + offset);
-      }
-
-      const guestReasons: string[] = [];
-      if (seatPriority(guest) === 0) {
-        guestReasons.push('主賓・役職者として上座側へ');
-      } else if (seatIndex === 0) {
-        guestReasons.push('上座に配置');
-      }
-      if (size > 1) {
-        guestReasons.push(`同伴者${size - 1}名と隣同士になるよう配置`);
-      }
-      const bucketKey = `${best.tableId}:${guest.side}:${guest.group}`;
-      const sameBucket = placedByTableBucket.get(bucketKey) ?? [];
-      if (sameBucket.length > 0) {
-        const names = sameBucket.slice(0, 2).map((g) => `${g.name}さん`).join('・');
-        guestReasons.push(
-          `同じ${SIDE_LABELS[guest.side]}・${GROUP_LABELS[guest.group]}の${names}と同じ卓`,
-        );
-      }
-      if (guestReasons.length === 0) {
-        guestReasons.push('空席のバランスを考慮して配置');
-      }
-      reasons[guest.id] = guestReasons;
-      placedByTableBucket.set(bucketKey, [...sameBucket, guest]);
+      if (seatPriority(guest) === 0) vipGuests.push(guest);
+      else otherGuests.push(guest);
     }
   }
+  for (const guest of vipGuests) placeGuest(guest, true);
+  for (const guest of otherGuests) placeGuest(guest, false);
 
   return { assignments: proposal, reasons };
 }

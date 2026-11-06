@@ -14,6 +14,8 @@ export interface InvitationData {
     date: string
     venue: string
     message: string
+    /** 主催者が設定した回答期限（YYYY-MM-DD）。未設定なら未定義 */
+    rsvpDeadline?: string
   }
   guest: {
     id: string

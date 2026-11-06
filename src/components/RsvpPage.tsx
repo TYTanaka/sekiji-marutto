@@ -6,7 +6,42 @@ import {
   type InvitationData,
 } from '../lib/supabase';
 import { useAppState } from '../store/appState';
+import { configuredDeadline, isDeadlinePassed } from '../lib/deadline';
 import heroUrl from '../assets/hero.webp';
+
+/** 未送信の入力（下書き）を端末内に残すキー。ゲストのトークンごとに分ける */
+function draftKeyFor(token: string): string {
+  return `sekiji-rsvp-draft-v1:${token}`;
+}
+
+interface RsvpDraft {
+  choice: Choice | null;
+  companions: number;
+  allergy: string;
+  memo: string;
+}
+
+function loadDraft(token: string): RsvpDraft | null {
+  try {
+    const raw = localStorage.getItem(draftKeyFor(token));
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const d = parsed as Record<string, unknown>;
+    return {
+      choice:
+        d.choice === 'attending' || d.choice === 'declined' ? d.choice : null,
+      companions:
+        typeof d.companions === 'number' && Number.isFinite(d.companions)
+          ? d.companions
+          : 0,
+      allergy: typeof d.allergy === 'string' ? d.allergy : '',
+      memo: typeof d.memo === 'string' ? d.memo : '',
+    };
+  } catch {
+    return null;
+  }
+}
 
 type RsvpPageProps = {
   token: string;
@@ -90,10 +125,13 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
   const [error, setError] = useState('');
   // 読み込み失敗時の再試行用（増やすと読み込みeffectが再実行される）
   const [loadAttempt, setLoadAttempt] = useState(0);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   const stateRef = useRef(state);
   stateRef.current = state;
   const loadedKeyRef = useRef<string | null>(null);
+  // 読み込み直後の入力値（サーバー/名簿の値）。下書き保存は「ここから変わった時」だけ行う
+  const initialValuesRef = useRef<RsvpDraft | null>(null);
 
   useEffect(() => {
     // Load once per token. Re-running on every state.guests change would wipe
@@ -173,17 +211,41 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
         }
 
         setInvitation(data);
-        if (
-          data.guest.rsvp === 'attending' ||
-          data.guest.rsvp === 'declined'
-        ) {
+        const initial: RsvpDraft = {
+          choice:
+            data.guest.rsvp === 'attending' || data.guest.rsvp === 'declined'
+              ? data.guest.rsvp
+              : null,
+          companions: data.guest.companions ?? 0,
+          allergy: data.guest.allergy ?? '',
+          memo: data.guest.memo ?? '',
+        };
+        if (initial.choice !== null) {
           setAlreadyAnswered(true);
-          setChoice(data.guest.rsvp);
-          setCompanions(data.guest.companions ?? 0);
-          setAllergy(data.guest.allergy ?? '');
-          setMemo(data.guest.memo ?? '');
+          setChoice(initial.choice);
+          setCompanions(initial.companions);
+          setAllergy(initial.allergy);
+          setMemo(initial.memo);
         }
+        initialValuesRef.current = initial;
         setStatus('ready');
+
+        // 下書きの復元：前回この端末で入力途中の内容が残っていれば、
+        // 名簿の値より優先してフォームへ戻す（離脱しても再入力にならない）
+        const draft = loadDraft(token);
+        if (
+          draft &&
+          (draft.choice !== initial.choice ||
+            draft.companions !== initial.companions ||
+            draft.allergy !== initial.allergy ||
+            draft.memo !== initial.memo)
+        ) {
+          setChoice(draft.choice);
+          setCompanions(draft.companions);
+          setAllergy(draft.allergy);
+          setMemo(draft.memo);
+          setDraftRestored(true);
+        }
 
         // 開封記録： ローカルモードでは状態に直接残す（クラウドモードでは
         // get_invitation RPC がサーバー側で記録する）。最初の1回だけ。
@@ -211,8 +273,37 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
     setLoadAttempt((n) => n + 1);
   }
 
+  // 下書きの自動保存：読み込んだ値から入力が変わったら端末内に残す。
+  // デモ見本では保存しない（見本の入力が本番リンクの下書きに混ざらないように）。
+  useEffect(() => {
+    if (demoPreview || status !== 'ready') return;
+    const initial = initialValuesRef.current;
+    if (!initial) return;
+    if (
+      choice === initial.choice &&
+      companions === initial.companions &&
+      allergy === initial.allergy &&
+      memo === initial.memo
+    ) {
+      return;
+    }
+    try {
+      const draft: RsvpDraft = { choice, companions, allergy, memo };
+      localStorage.setItem(draftKeyFor(token), JSON.stringify(draft));
+    } catch {
+      // Storage unavailable: drafts are best-effort.
+    }
+  }, [choice, companions, allergy, memo, status, demoPreview, token]);
+
   async function handleSubmit() {
     if (!invitation || choice === null || submitting) return;
+    // 回答期限を過ぎていたら送信しない（画面側でもフォームを閉じている）
+    if (isDeadlinePassed(invitation.info)) {
+      setError(
+        '回答期限を過ぎているため、このページからは送信できません。変更をご希望の場合は主催者へご連絡ください。',
+      );
+      return;
+    }
     setSubmitting(true);
     setError('');
     const companionCount = choice === 'attending' ? companions : 0;
@@ -227,7 +318,7 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
           return;
         }
         dispatch({
-          type: 'updateGuest',
+          type: 'guestRespond',
           guest: {
             ...fullGuest,
             rsvp: choice,
@@ -255,7 +346,7 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
           return;
         }
         dispatch({
-          type: 'updateGuest',
+          type: 'guestRespond',
           guest: {
             ...fullGuest,
             rsvp: choice,
@@ -265,6 +356,15 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
           },
         });
       }
+      // 送信できたら下書きは不要になるので消す
+      if (!demoPreview) {
+        try {
+          localStorage.removeItem(draftKeyFor(token));
+        } catch {
+          // Ignore storage failures.
+        }
+      }
+      setDraftRestored(false);
       setSummary({ rsvp: choice, companions: companionCount, allergy, memo });
       setStatus('submitted');
     } catch {
@@ -336,6 +436,8 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
   }
 
   const { info, guest } = invitation;
+  const deadline = configuredDeadline(info);
+  const deadlinePassed = isDeadlinePassed(info);
 
   return (
     <main className="rsvp-page">
@@ -356,8 +458,39 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
             お席のご案内： {invitation.seat.tableName} {invitation.seat.seatIndex + 1}番席
           </p>
         )}
+        {deadline && !deadlinePassed && (
+          <p className="inv-deadline">
+            {`回答期限： ${formatJapaneseDate(info.rsvpDeadline!)}までにご回答ください`}
+          </p>
+        )}
       </section>
 
+      {deadlinePassed ? (
+        <section className="card" aria-labelledby="rsvp-closed-title">
+          <h2 id="rsvp-closed-title">回答の受付は終了しました</h2>
+          <p>
+            {`回答期限（${formatJapaneseDate(info.rsvpDeadline!)}）を過ぎたため、このページからの回答・変更は締め切りました。`}
+          </p>
+          {alreadyAnswered ? (
+            <>
+              <p>前回ご回答いただいた内容はこちらです。</p>
+              <dl className="summary-list">
+                <div><dt>出欠</dt><dd>{choice === 'attending' ? '出席' : '欠席'}</dd></div>
+                {choice === 'attending' && (
+                  <div><dt>同伴者数</dt><dd>{companions}名</dd></div>
+                )}
+                <div><dt>アレルギー</dt><dd>{allergy || 'なし'}</dd></div>
+                <div><dt>メッセージ</dt><dd>{memo || 'なし'}</dd></div>
+              </dl>
+            </>
+          ) : (
+            <p>まだご回答はいただいていません。</p>
+          )}
+          <p className="muted">
+            変更をご希望の場合は、お手数ですが主催者（新郎新婦）へ直接ご連絡ください。
+          </p>
+        </section>
+      ) : (
       <form
         className="card"
         aria-labelledby="rsvp-title"
@@ -368,6 +501,11 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
         }}
       >
         <h2 id="rsvp-title">出欠のご回答</h2>
+        {draftRestored && (
+          <p className="hint" role="status">
+            下書きを復元しました。前回この端末で入力途中の内容が入っています。
+          </p>
+        )}
         <fieldset disabled={submitting} className="rsvp-fields">
           <div className="field">
             <span className="field-cap">出欠（必須）</span>
@@ -424,6 +562,7 @@ export default function RsvpPage({ token, demoGuestId, onClose }: RsvpPageProps)
           {submitting ? '送信中…' : '送信する'}
         </button>
       </form>
+      )}
       <ServiceCredit />
     </main>
   );

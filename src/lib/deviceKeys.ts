@@ -38,6 +38,7 @@ const DEVICE_KEY_PREFIXES = [
   'sekiji-checkin',
   'sekiji-submission',
   'sekiji-setup-done',
+  'sekiji-print-mode',
 ];
 
 /** ログアウト時に、端末へ残る式単位の補助データを掃除する */

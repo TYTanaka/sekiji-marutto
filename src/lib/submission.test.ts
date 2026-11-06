@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { createSeedState } from './seed';
-import { takeSubmissionSnapshot, diffSubmission } from './submission';
+import {
+  takeSubmissionSnapshot,
+  diffSubmission,
+  createDemoSubmissionSnapshot,
+} from './submission';
 
 describe('式場提出パックの差分', () => {
   it('変更がなければ差分は空', () => {
@@ -30,5 +34,17 @@ describe('式場提出パックの差分', () => {
     expect(diff.seatChanges[0].guestName).toBe('高橋 誠');
     expect(diff.seatChanges[0].from).toContain('A卓');
     expect(diff.seatChanges[0].to).toContain('B卓');
+  });
+
+  it('デモ用スナップショットは、提出パックを開いてすぐ差分が見える状態を作る', () => {
+    const state = createSeedState();
+    const snapshot = createDemoSubmissionSnapshot(state);
+    const diff = diffSubmission(snapshot, state);
+    // 出欠の変更が1件以上、席の移動が1件以上ある
+    expect(diff.guestChanges.length).toBeGreaterThanOrEqual(1);
+    expect(diff.guestChanges.some((c) => c.text.includes('出欠'))).toBe(true);
+    expect(diff.seatChanges.length).toBeGreaterThanOrEqual(1);
+    // スナップショットは過去の日付で作られる
+    expect(new Date(snapshot.at).getTime()).toBeLessThan(Date.now());
   });
 });

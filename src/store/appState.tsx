@@ -22,11 +22,17 @@ import { createSeedState } from '../lib/seed';
 import { validateAssignment } from '../lib/seating';
 import { createDefaultTasks } from '../lib/tasks';
 import { newInviteToken, newLocalId } from '../lib/tokens';
-import { diffGuests, type ChangeEvent } from '../lib/changes';
+import {
+  diffGuests,
+  type ChangeEvent,
+  type ChangeSource,
+} from '../lib/changes';
 
 export type Action =
   | { type: 'addGuest'; guest: Guest }
   | { type: 'updateGuest'; guest: Guest }
+  /** ゲスト本人が招待ページから回答した更新（変更レーダーで主体を区別するため） */
+  | { type: 'guestRespond'; guest: Guest }
   | { type: 'removeGuest'; guestId: string }
   | { type: 'setRsvp'; guestId: string; rsvp: RsvpStatus }
   | { type: 'addTable'; table: TableDef }
@@ -40,7 +46,8 @@ export type Action =
   | { type: 'toggleTask'; taskId: string }
   | { type: 'removeTask'; taskId: string }
   | { type: 'moveTask'; taskId: string; direction: -1 | 1 }
-  | { type: 'hydrate'; state: AppState };
+  /** origin: その状態がどこから来たか（変更レーダーの主体判定に使う） */
+  | { type: 'hydrate'; state: AppState; origin?: ChangeSource };
 
 const STORAGE_KEY = 'sekiji-state-v2';
 
@@ -62,6 +69,7 @@ export function reducer(state: AppState, action: Action): AppState {
       };
 
     case 'updateGuest':
+    case 'guestRespond':
       return {
         ...state,
         guests: state.guests.map((guest) =>
@@ -296,12 +304,14 @@ export function normalizeState(state: AppState): AppState {
     typeof state.info === 'object' && state.info !== null
       ? (state.info as unknown as Record<string, unknown>)
       : {};
+  const rsvpDeadline = asString(infoSource.rsvpDeadline);
   const info: AppState['info'] = {
     groomName: asString(infoSource.groomName),
     brideName: asString(infoSource.brideName),
     date: asString(infoSource.date),
     venue: asString(infoSource.venue),
     message: asString(infoSource.message),
+    ...(rsvpDeadline ? { rsvpDeadline } : {}),
   };
 
   const tasks = Array.isArray(state.tasks) ? state.tasks : createDefaultTasks(info.date);
@@ -410,11 +420,28 @@ export function AppStateProvider({
       ? { state: demoInitialState ?? createSeedState(), fromStorage: false }
       : loadInitialStateMeta(),
   );
-  const [state, dispatch] = useReducer(reducer, init.state);
+  const [state, rawDispatch] = useReducer(reducer, init.state);
   const [changes, setChanges] = useState<ChangeEvent[]>(() =>
     mode === 'demo' ? [] : loadChanges(),
   );
   const prevGuestsRef = useRef<Guest[] | null>(null);
+  // 直近の dispatch の「主体」。変更レーダーの各イベントに付ける。
+  // ゲスト本人の回答（guestRespond）と、クラウドから届いた状態（origin:'guest' の
+  // hydrate）は 'guest'、それ以外の管理画面での操作は 'host' とみなす。
+  const originRef = useRef<ChangeSource>('host');
+  const dispatch: Dispatch<Action> = useCallback(
+    (action: Action) => {
+      if (action.type === 'guestRespond') {
+        originRef.current = 'guest';
+      } else if (action.type === 'hydrate') {
+        originRef.current = action.origin ?? 'host';
+      } else {
+        originRef.current = 'host';
+      }
+      rawDispatch(action);
+    },
+    [],
+  );
 
   // 変更レーダー： ゲストの回答内容が前回から変わったら記録する。
   // クラウド経由（ゲスト本人の回答）も、主催者の編集も、hydrate の差分として検知できる。
@@ -422,7 +449,7 @@ export function AppStateProvider({
     const prev = prevGuestsRef.current;
     prevGuestsRef.current = state.guests;
     if (prev === null) return;
-    const events = diffGuests(prev, state.guests);
+    const events = diffGuests(prev, state.guests, new Date(), originRef.current);
     if (events.length === 0) return;
     setChanges((current) => {
       const merged = [...events.reverse(), ...current].slice(0, MAX_CHANGES);

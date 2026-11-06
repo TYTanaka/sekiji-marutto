@@ -47,6 +47,20 @@ export function summarize(state: AppState): Summary {
   };
 }
 
+/** 全卓の総席数 */
+export function totalSeats(state: AppState): number {
+  return state.tables.reduce((sum, table) => sum + table.seats, 0);
+}
+
+/**
+ * 席が何名分足りないか（出席予定の延べ人数 − 総席数）。
+ * 足りている場合は 0。未配置リストを数えなくても超過に気づけるよう、
+ * 概要と席次タブで明示するための算出。
+ */
+export function seatShortage(state: AppState): number {
+  return Math.max(0, summarize(state).attendingHeads - totalSeats(state));
+}
+
 export function nextActionHint(state: AppState): string {
   const { total, pending, unseated, attending } = summarize(state);
 

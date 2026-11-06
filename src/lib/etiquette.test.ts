@@ -51,4 +51,18 @@ describe('席次作法チェック', () => {
     const notes = checkSeatingEtiquette(state);
     expect(notes.some((n) => n.text.includes('混ざっています'))).toBe(true);
   });
+
+  it('両サイド混在は「確認」レベル止まりで、警告にはならない', () => {
+    const seed = createSeedState();
+    const state = withAssignments(seed, {
+      ...seed.assignments,
+      g7: { tableId: 'table-a', seatIndex: 4 },
+    });
+    const notes = checkSeatingEtiquette(state);
+    const sideMix = notes.filter((n) => n.text.includes('混ざっています'));
+    expect(sideMix.length).toBeGreaterThan(0);
+    expect(sideMix.every((n) => n.level === 'check')).toBe(true);
+    // 混在そのものでは警告は1件も出ない（本物の問題の警告と混ざらない）
+    expect(notes.filter((n) => n.level === 'warn')).toEqual([]);
+  });
 });

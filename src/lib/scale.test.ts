@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createLargeSeedState } from './seedLarge';
 import { proposeAssignments } from './autoSeat';
-import { summarize } from './stats';
+import { summarize, seatShortage } from './stats';
 import { unassignedAttending, tableFill } from './seating';
+import { checkSeatingEtiquette } from './etiquette';
+import type { AppState } from '../types';
 
 describe('大規模データ（120名・15卓）の検証', () => {
   const state = createLargeSeedState();
@@ -47,11 +49,35 @@ describe('大規模データ（120名・15卓）の検証', () => {
     }
   });
 
-  it('大規模サンプルは出席者全員が配置済みの状態で読み込まれる', () => {
-    expect(unassignedAttending(state)).toHaveLength(0);
+  it('大規模サンプルは数名だけ未配置で読み込まれ、自動配置を体験できる', () => {
+    const unassigned = unassignedAttending(state);
+    // 自動配置ボタン→配置理由まで辿れるよう、5〜8名が未配置で始まる
+    expect(unassigned.length).toBeGreaterThanOrEqual(5);
+    expect(unassigned.length).toBeLessThanOrEqual(8);
     for (const table of state.tables) {
       const fill = tableFill(state, table.id);
       expect(fill.seated).toBeLessThanOrEqual(fill.seats);
     }
+    // 初期状態の時点で作法チェックの警告は出ない（デモの第一印象を荒らさない）
+    expect(checkSeatingEtiquette(state).filter((n) => n.level === 'warn')).toEqual([]);
+
+    // 提案を適用すると全員が配置され、作法の警告も出ない
+    // （proposeAssignments は未配置分への追加提案を返す）
+    const after: AppState = {
+      ...state,
+      assignments: { ...state.assignments, ...proposeAssignments(state) },
+    };
+    expect(unassignedAttending(after)).toHaveLength(0);
+    expect(checkSeatingEtiquette(after).filter((n) => n.level === 'warn')).toEqual([]);
+  });
+
+  it('定員超過は seatShortage で不足席数として算出される', () => {
+    expect(seatShortage(state)).toBe(0);
+    // 卓を減らすと、その分だけ不足として数えられる
+    const fewer: AppState = { ...state, tables: state.tables.slice(0, 14) };
+    const attendingHeads = state.guests
+      .filter((g) => g.rsvp === 'attending')
+      .reduce((sum, g) => sum + 1 + g.companions, 0);
+    expect(seatShortage(fewer)).toBe(attendingHeads - 14 * 8);
   });
 });

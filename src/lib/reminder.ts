@@ -1,12 +1,15 @@
 import type { Guest, WeddingInfo } from '../types';
+import { configuredDeadline } from './deadline';
 
 export function inviteUrlFor(token: string): string {
   const base = `${window.location.origin}${window.location.pathname}`;
   return `${base}#/rsvp/${token}`;
 }
 
-/** 回答締切 = 挙式の30日前 */
+/** 催促文面で案内する回答締切 = 主催者が設定した期限があればそれ、無ければ挙式の30日前 */
 export function replyDeadline(info: WeddingInfo): Date | null {
+  const configured = configuredDeadline(info);
+  if (configured) return configured;
   const d = new Date(`${info.date}T00:00:00`);
   if (Number.isNaN(d.getTime())) return null;
   d.setDate(d.getDate() - 30);

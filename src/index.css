@@ -1395,6 +1395,21 @@ button:not([class]):hover { background: var(--rose-soft); }
 .changes-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .changes-list li { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
 .changes-when { color: var(--muted); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.changes-source {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+}
+
+/* ===== 定員超過の警告 ===== */
+.capacity-warning { border: 1px solid #C0392B; }
+.capacity-warning h2 { color: #C0392B; margin-top: 0; }
+.capacity-alert { border: 1px solid #C0392B; color: #C0392B; }
 .reasons-panel { margin: 14px 0; }
 .reasons-table { margin-top: 10px; }
 .reasons-table h4 { margin: 0 0 6px; }
@@ -1572,6 +1587,13 @@ button:not([class]):hover { background: var(--rose-soft); }
 
 /* ===== 提出パックのCSV ===== */
 .pack-csv { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+/* ===== 招待状の回答期限 ===== */
+.inv-deadline {
+  margin-top: 14px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
 
 /* ===== 招待状のお席表示 ===== */
 .inv-seat {

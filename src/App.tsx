@@ -341,6 +341,7 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
             <Dashboard
               onShowPending={() => { changeView('guests'); setFocusPending((n) => n + 1); }}
               onShowPrint={() => changeView('print')}
+              onShowSeating={() => changeView('seating')}
             />
           )}
           {view === 'guests' && <GuestManager focusPendingSignal={focusPending} />}
@@ -507,6 +508,24 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                     }
                   />
                 </label>
+                <label htmlFor="rsvp-deadline">
+                  回答期限（任意）
+                  <input
+                    id="rsvp-deadline"
+                    type="date"
+                    disabled={demo}
+                    value={info.rsvpDeadline ?? ''}
+                    onChange={(event) =>
+                      dispatch({
+                        type: 'setInfo',
+                        info: {
+                          ...info,
+                          rsvpDeadline: event.target.value || undefined,
+                        },
+                      })
+                    }
+                  />
+                </label>
                 <label htmlFor="wedding-message" className="field-wide">
                   メッセージ
                   <textarea
@@ -524,12 +543,15 @@ function Shell({ demo, demoInitialState }: { demo: boolean; demoInitialState?: A
                 </label>
               </div>
             </form>
+            <p className="muted">
+              回答期限を設定すると、招待ページに「○月○日までにご回答ください」と表示され、期限を過ぎるとゲストはページから回答・変更できなくなります（変更は主催者へ連絡してもらう案内が出ます）。主催者は期限後も管理画面で内容を確認できます。未設定の場合は締め切りません。
+            </p>
             {!demo && (
               <>
                 <div className="sample-zone">
                   <h3>大規模サンプルの確認</h3>
                   <p className="muted">
-                    120名・15卓の披露宴データを読み込んで、表示や席次の動作を確認できます。出席者は自動配置済みの状態で読み込まれます。
+                    120名・15卓の披露宴データを読み込んで、表示や席次の動作を確認できます。数名だけ未配置の状態で読み込まれるので、自動配置も試せます。
                   </p>
                   {confirmingLoad ? (
                     <div className="confirm-inline">
